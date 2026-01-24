@@ -197,6 +197,38 @@ def get_payment_amount(payment_type: str) -> int:
 
 # ============= ROUTES =============
 
+@app.get("/test")
+async def test_page():
+    """Simple test page"""
+    return HTMLResponse("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>WAHALA UK Test</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                max-width: 800px;
+                margin: 50px auto;
+                padding: 20px;
+                text-align: center;
+            }
+            h1 { color: #FF6B6B; font-size: 48px; }
+            p { font-size: 20px; color: #333; }
+            .success { color: #4CAF50; font-weight: bold; }
+        </style>
+    </head>
+    <body>
+        <h1>🎉 WAHALA UK Website is Working!</h1>
+        <p class="success">✅ Backend is running correctly!</p>
+        <p>Your marketing website is ready at the root URL (/).</p>
+        <p>If you see this page, everything is working!</p>
+        <hr>
+        <p><a href="/" style="color: #FF6B6B; font-size: 24px;">→ View Full Website</a></p>
+    </body>
+    </html>
+    """)
+
 @app.get("/")
 async def root():
     """Serve the marketing website"""
