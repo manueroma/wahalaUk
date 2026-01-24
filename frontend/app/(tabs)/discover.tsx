@@ -30,10 +30,23 @@ export default function DiscoverScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [swiping, setSwiping] = useState(false);
+  const [swipesRemaining, setSwipesRemaining] = useState<number | null>(null);
 
   useEffect(() => {
     loadPotentialMatches();
+    loadSwipeStatus();
   }, []);
+
+  const loadSwipeStatus = async () => {
+    try {
+      const response = await api.get('/api/swipes/remaining');
+      if (!response.data.unlimited) {
+        setSwipesRemaining(response.data.remaining);
+      }
+    } catch (error) {
+      console.error('Failed to load swipe status');
+    }
+  };
 
   const loadPotentialMatches = async () => {
     setLoading(true);
@@ -59,6 +72,19 @@ export default function DiscoverScreen() {
         direction,
       });
 
+      // Update swipes remaining
+      if (response.data.remaining_swipes !== null && response.data.remaining_swipes !== undefined) {
+        setSwipesRemaining(response.data.remaining_swipes);
+        
+        if (response.data.remaining_swipes === 0) {
+          Alert.alert(
+            'Daily Limit Reached',
+            'You\'ve used all 20 swipes for today! Upgrade to Premium for unlimited swipes.',
+            [{ text: 'OK' }]
+          );
+        }
+      }
+
       if (response.data.matched) {
         Alert.alert('🎉 It\'s a Match!', 'You can now start chatting!');
       }
@@ -69,8 +95,16 @@ export default function DiscoverScreen() {
       if (currentIndex >= users.length - 3) {
         loadPotentialMatches();
       }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to swipe');
+    } catch (error: any) {
+      if (error.response?.status === 403) {
+        Alert.alert(
+          'Upgrade to Premium',
+          error.response?.data?.detail || 'Daily swipe limit reached. Upgrade for unlimited swipes!',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert('Error', 'Failed to swipe');
+      }
     } finally {
       setSwiping(false);
     }
@@ -101,6 +135,15 @@ export default function DiscoverScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Swipe Counter */}
+      {swipesRemaining !== null && (
+        <View style={styles.swipeCounter}>
+          <Text style={styles.swipeCounterText}>
+            {swipesRemaining} swipes left today
+          </Text>
+        </View>
+      )}
+
       {/* Card */}
       <View style={styles.card}>
         <Image
@@ -176,6 +219,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F5F5F5',
+  },
+  swipeCounter: {
+    backgroundColor: '#FFF0F0',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  swipeCounterText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#FF6B6B',
   },
   card: {
     width: width - 32,
