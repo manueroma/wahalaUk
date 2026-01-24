@@ -200,7 +200,14 @@ def get_payment_amount(payment_type: str) -> int:
 @app.get("/")
 async def root():
     """Serve the marketing website"""
-    return FileResponse("/app/website/index.html")
+    return FileResponse(
+        "/app/website/index.html",
+        media_type="text/html",
+        headers={
+            "Cache-Control": "no-cache",
+            "Content-Type": "text/html; charset=utf-8"
+        }
+    )
 
 @app.get("/api/health")
 async def health_check():
