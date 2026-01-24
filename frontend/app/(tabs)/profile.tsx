@@ -137,14 +137,112 @@ export default function ProfileScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.menuItem}>
-          <Ionicons name="settings-outline" size={24} color="#666" />
-          <Text style={styles.menuText}>Account Settings</Text>
+          <Ionicons name="person-outline" size={24} color="#666" />
+          <Text style={styles.menuText}>Edit Profile</Text>
+          <Ionicons name="chevron-forward" size={24} color="#DDD" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.menuItem}>
+          <Ionicons name="notifications-outline" size={24} color="#666" />
+          <Text style={styles.menuText}>Notifications</Text>
+          <Ionicons name="chevron-forward" size={24} color="#DDD" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.menuItem}>
+          <Ionicons name="shield-outline" size={24} color="#666" />
+          <Text style={styles.menuText}>Privacy & Safety</Text>
+          <Ionicons name="chevron-forward" size={24} color="#DDD" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.menuItem}>
+          <Ionicons name="eye-off-outline" size={24} color="#666" />
+          <Text style={styles.menuText}>Blocked Users</Text>
+          <Ionicons name="chevron-forward" size={24} color="#DDD" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.menuItem}>
+          <Ionicons name="location-outline" size={24} color="#666" />
+          <Text style={styles.menuText}>Discovery Preferences</Text>
+          <Ionicons name="chevron-forward" size={24} color="#DDD" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.menuItem}>
+          <Ionicons name="language-outline" size={24} color="#666" />
+          <Text style={styles.menuText}>Language & Region</Text>
+          <Ionicons name="chevron-forward" size={24} color="#DDD" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.menuItem}>
+          <Ionicons name="card-outline" size={24} color="#666" />
+          <Text style={styles.menuText}>Payment Methods</Text>
+          <Ionicons name="chevron-forward" size={24} color="#DDD" />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Help & Support</Text>
+
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={() => Alert.alert('Contact Us', 'Email: wahalauk@gmail.com\n\nWe typically respond within 24 hours.')}
+        >
+          <Ionicons name="mail-outline" size={24} color="#666" />
+          <View style={styles.menuTextContainer}>
+            <Text style={styles.menuText}>Contact Us</Text>
+            <Text style={styles.menuSubtext}>wahalauk@gmail.com</Text>
+          </View>
           <Ionicons name="chevron-forward" size={24} color="#DDD" />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.menuItem}>
           <Ionicons name="help-circle-outline" size={24} color="#666" />
-          <Text style={styles.menuText}>Help & Support</Text>
+          <Text style={styles.menuText}>Help Center</Text>
+          <Ionicons name="chevron-forward" size={24} color="#DDD" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.menuItem}>
+          <Ionicons name="shield-checkmark-outline" size={24} color="#666" />
+          <Text style={styles.menuText}>Safety Tips</Text>
+          <Ionicons name="chevron-forward" size={24} color="#DDD" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.menuItem}>
+          <Ionicons name="chatbubble-outline" size={24} color="#666" />
+          <Text style={styles.menuText}>FAQs</Text>
+          <Ionicons name="chevron-forward" size={24} color="#DDD" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.menuItem}>
+          <Ionicons name="document-text-outline" size={24} color="#666" />
+          <Text style={styles.menuText}>Terms of Service</Text>
+          <Ionicons name="chevron-forward" size={24} color="#DDD" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.menuItem}>
+          <Ionicons name="lock-closed-outline" size={24} color="#666" />
+          <Text style={styles.menuText}>Privacy Policy</Text>
+          <Ionicons name="chevron-forward" size={24} color="#DDD" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.menuItem}>
+          <Ionicons name="information-circle-outline" size={24} color="#666" />
+          <Text style={styles.menuText}>About WAHALA UK</Text>
+          <Ionicons name="chevron-forward" size={24} color="#DDD" />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Account</Text>
+
+        <TouchableOpacity style={styles.menuItem}>
+          <Ionicons name="time-outline" size={24} color="#666" />
+          <Text style={styles.menuText}>Deactivate Account</Text>
+          <Ionicons name="chevron-forward" size={24} color="#DDD" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.menuItem}>
+          <Ionicons name="trash-outline" size={24} color="#FF6B6B" />
+          <Text style={[styles.menuText, styles.deleteText]}>Delete Account</Text>
           <Ionicons name="chevron-forward" size={24} color="#DDD" />
         </TouchableOpacity>
 
@@ -315,6 +413,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     marginLeft: 16,
+  },
+  menuTextContainer: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  menuSubtext: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
+  },
+  deleteText: {
+    color: '#FF6B6B',
   },
   logoutText: {
     color: '#FF6B6B',
