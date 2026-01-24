@@ -1,0 +1,272 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Image,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { Picker } from '@react-native-picker/picker';
+import { useAuthStore } from '../../store/authStore';
+import api from '../../services/api';
+
+export default function RegisterScreen() {
+  const router = useRouter();
+  const login = useAuthStore((state) => state.login);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    name: '',
+    age: '',
+    gender: 'male',
+    location_city: '',
+    location_country: 'UK',
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleRegister = async () => {
+    if (!formData.email || !formData.password || !formData.name || !formData.age || !formData.location_city) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    if (parseInt(formData.age) < 18) {
+      Alert.alert('Error', 'You must be 18 or older to register');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await api.post('/api/auth/register', {
+        email: formData.email,
+        password: formData.password,
+        name: formData.name,
+        age: parseInt(formData.age),
+        gender: formData.gender,
+        location_city: formData.location_city,
+        location_country: formData.location_country,
+      });
+
+      const { user, token } = response.data;
+      await login(user, token);
+      router.replace('/profile/setup');
+    } catch (error: any) {
+      Alert.alert('Registration Failed', error.response?.data?.detail || 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Image
+          source={require('../../assets/images/wahala-logo.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+
+        <Text style={styles.title}>Join WAHALA UK</Text>
+        <Text style={styles.subtitle}>Find serious relationships</Text>
+
+        <View style={styles.form}>
+          <TextInput
+            style={styles.input}
+            placeholder="Full Name"
+            placeholderTextColor="#999"
+            value={formData.name}
+            onChangeText={(text) => setFormData({ ...formData, name: text })}
+          />
+
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor="#999"
+            value={formData.email}
+            onChangeText={(text) => setFormData({ ...formData, email: text })}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+
+          <TextInput
+            style={styles.input}
+            placeholder="Age"
+            placeholderTextColor="#999"
+            value={formData.age}
+            onChangeText={(text) => setFormData({ ...formData, age: text })}
+            keyboardType="number-pad"
+          />
+
+          <View style={styles.pickerContainer}>
+            <Text style={styles.label}>Gender</Text>
+            <View style={styles.picker}>
+              <Picker
+                selectedValue={formData.gender}
+                onValueChange={(value) => setFormData({ ...formData, gender: value })}
+              >
+                <Picker.Item label="Male" value="male" />
+                <Picker.Item label="Female" value="female" />
+                <Picker.Item label="Other" value="other" />
+              </Picker>
+            </View>
+          </View>
+
+          <TextInput
+            style={styles.input}
+            placeholder="City"
+            placeholderTextColor="#999"
+            value={formData.location_city}
+            onChangeText={(text) => setFormData({ ...formData, location_city: text })}
+          />
+
+          <View style={styles.pickerContainer}>
+            <Text style={styles.label}>Country</Text>
+            <View style={styles.picker}>
+              <Picker
+                selectedValue={formData.location_country}
+                onValueChange={(value) => setFormData({ ...formData, location_country: value })}
+              >
+                <Picker.Item label="United Kingdom" value="UK" />
+                <Picker.Item label="United States" value="US" />
+              </Picker>
+            </View>
+          </View>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor="#999"
+            value={formData.password}
+            onChangeText={(text) => setFormData({ ...formData, password: text })}
+            secureTextEntry
+          />
+
+          <TextInput
+            style={styles.input}
+            placeholder="Confirm Password"
+            placeholderTextColor="#999"
+            value={formData.confirmPassword}
+            onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
+            secureTextEntry
+          />
+
+          <TouchableOpacity
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={handleRegister}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>
+              {loading ? 'Creating Account...' : 'Sign Up'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.linkButton}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.linkText}>
+              Already have an account? <Text style={styles.linkBold}>Login</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    padding: 24,
+    paddingTop: 60,
+  },
+  logo: {
+    width: 140,
+    height: 140,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  form: {
+    width: '100%',
+  },
+  input: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    marginBottom: 12,
+    color: '#333',
+  },
+  pickerContainer: {
+    marginBottom: 12,
+  },
+  label: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  picker: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+  },
+  button: {
+    backgroundColor: '#FF6B6B',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  linkButton: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  linkText: {
+    color: '#666',
+    fontSize: 14,
+  },
+  linkBold: {
+    color: '#FF6B6B',
+    fontWeight: 'bold',
+  },
+});

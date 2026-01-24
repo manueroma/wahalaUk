@@ -1,16 +1,34 @@
-import { Text, View, StyleSheet, Image } from "react-native";
-
-const EXPO_PUBLIC_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+import { useEffect } from 'react';
+import { View, Image, StyleSheet, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useAuthStore } from '../store/authStore';
 
 export default function Index() {
-  console.log(EXPO_PUBLIC_BACKEND_URL, "EXPO_PUBLIC_BACKEND_URL");
+  const router = useRouter();
+  const { user, isLoading } = useAuthStore();
+
+  useEffect(() => {
+    if (!isLoading) {
+      if (user) {
+        if (user.profile_complete) {
+          router.replace('/(tabs)/discover');
+        } else {
+          router.replace('/profile/setup');
+        }
+      } else {
+        router.replace('/auth/login');
+      }
+    }
+  }, [user, isLoading]);
 
   return (
     <View style={styles.container}>
       <Image
-        source={require("../assets/images/app-image.png")}
-        style={styles.image}
+        source={require('../assets/images/wahala-logo.png')}
+        style={styles.logo}
+        resizeMode="contain"
       />
+      <ActivityIndicator size="large" color="#FF6B6B" style={styles.loader} />
     </View>
   );
 }
@@ -18,13 +36,15 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0c0c0c",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  image: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "contain",
+  logo: {
+    width: 250,
+    height: 250,
+  },
+  loader: {
+    marginTop: 20,
   },
 });
