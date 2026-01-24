@@ -462,7 +462,9 @@ async def swipe(swipe_data: SwipeAction, current_user: dict = Depends(get_curren
                 "matched_at": datetime.utcnow(),
                 "chat_unlocked": False,
                 "unlock_time": datetime.utcnow() + timedelta(hours=1),
-                "unlock_method": None
+                "unlock_method": None,
+                "user1_free_snap_used": False,
+                "user2_free_snap_used": False
             }
             matches_collection.insert_one(match_doc)
             
@@ -586,13 +588,25 @@ async def get_messages(match_id: str, current_user: dict = Depends(get_current_u
     # Get messages
     messages = list(messages_collection.find({"match_id": match_id}).sort("created_at", 1))
     
-    # Filter expired snap videos
+    # Filter expired/viewed snaps
     result = []
     for msg in messages:
         msg = serialize_doc(msg)
         if msg["message_type"] == "snap":
+            # Check if expired
             if msg.get("expires_at") and datetime.utcnow() > msg["expires_at"]:
                 msg["content"] = "[Snap expired]"
+                msg["expired"] = True
+            # Check if already viewed (one-time view)
+            elif msg.get("viewed") and msg.get("one_time_view"):
+                msg["content"] = "[Snap already viewed]"
+                msg["expired"] = True
+            # If receiver is viewing, mark as viewed
+            elif msg["receiver_id"] == user_id and not msg.get("viewed"):
+                messages_collection.update_one(
+                    {"_id": ObjectId(msg["_id"])},
+                    {"$set": {"viewed": True, "viewed_at": datetime.utcnow()}}
+                )
         result.append(msg)
     
     return {"messages": result}
@@ -615,6 +629,28 @@ async def send_message(message_data: MessageSend, current_user: dict = Depends(g
     if not match["chat_unlocked"] and datetime.utcnow() < match["unlock_time"]:
         raise HTTPException(status_code=403, detail="Chat not unlocked yet")
     
+    # Special handling for snap videos
+    if message_data.message_type == "snap":
+        is_premium = current_user.get("premium_status") == "premium"
+        
+        # Determine which user is sending
+        user_snap_field = "user1_free_snap_used" if match["user1_id"] == user_id else "user2_free_snap_used"
+        has_used_free_snap = match.get(user_snap_field, False)
+        
+        # Check if user can send snap
+        if not is_premium and has_used_free_snap:
+            raise HTTPException(
+                status_code=403, 
+                detail="Free snap already used. Upgrade to Premium for unlimited snaps!"
+            )
+        
+        # Mark free snap as used if not premium
+        if not is_premium and not has_used_free_snap:
+            matches_collection.update_one(
+                {"_id": match["_id"]},
+                {"$set": {user_snap_field: True}}
+            )
+    
     # Get receiver ID
     receiver_id = match["user2_id"] if match["user1_id"] == user_id else match["user1_id"]
     
@@ -625,12 +661,15 @@ async def send_message(message_data: MessageSend, current_user: dict = Depends(g
         "receiver_id": receiver_id,
         "message_type": message_data.message_type,
         "content": message_data.content,
-        "created_at": datetime.utcnow()
+        "created_at": datetime.utcnow(),
+        "viewed": False
     }
     
-    # If snap, set expiry (7 seconds after viewing - simplified to 24 hours)
+    # If snap, set expiry and one-time view
     if message_data.message_type == "snap":
         message_doc["expires_at"] = datetime.utcnow() + timedelta(hours=24)
+        message_doc["one_time_view"] = True
+        message_doc["duration_seconds"] = 9
     
     result = messages_collection.insert_one(message_doc)
     message_doc["_id"] = str(result.inserted_id)
@@ -784,6 +823,28 @@ async def get_remaining_swipes(current_user: dict = Depends(get_current_user)):
         "unlimited": False,
         "remaining": max(0, remaining),
         "limit": 20
+    }
+
+@app.get("/api/chat/snap-status/{match_id}")
+async def get_snap_status(match_id: str, current_user: dict = Depends(get_current_user)):
+    """Check if user can send free snap"""
+    match = matches_collection.find_one({"_id": ObjectId(match_id)})
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found")
+    
+    user_id = str(current_user["_id"])
+    if user_id not in [match["user1_id"], match["user2_id"]]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    is_premium = current_user.get("premium_status") == "premium"
+    user_snap_field = "user1_free_snap_used" if match["user1_id"] == user_id else "user2_free_snap_used"
+    has_used_free_snap = match.get(user_snap_field, False)
+    
+    return {
+        "can_send_snap": is_premium or not has_used_free_snap,
+        "is_premium": is_premium,
+        "free_snap_used": has_used_free_snap,
+        "requires_premium": not is_premium and has_used_free_snap
     }
 
 # ============= REPORTS ROUTES =============
