@@ -43,6 +43,11 @@ users_collection.create_index("email", unique=True)
 matches_collection.create_index([("user1_id", 1), ("user2_id", 1)])
 roses_collection.create_index("receiver_id")
 
+# New collections for donations and affiliates
+donations_collection = db["donations"]
+affiliates_collection = db["affiliates"]
+affiliate_subscriptions_collection = db["affiliate_subscriptions"]
+
 app = FastAPI(title="WAHALA UK API")
 security = HTTPBearer()
 
