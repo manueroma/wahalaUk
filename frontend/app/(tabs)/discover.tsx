@@ -194,7 +194,7 @@ export default function DiscoverScreen() {
           disabled={swiping}
         >
           <Ionicons name="close" size={36} color="#FF6B6B" />
-          <Text style={styles.actionText}>NO WAHALA</Text>
+          <Text style={[styles.actionText, { color: '#FF6B6B' }]}>NO WAHALA</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -203,7 +203,7 @@ export default function DiscoverScreen() {
           disabled={swiping}
         >
           <Ionicons name="heart" size={36} color="#4CAF50" />
-          <Text style={styles.actionText}>WAHALA</Text>
+          <Text style={[styles.actionText, { color: '#4CAF50' }]}>WAHALA</Text>
         </TouchableOpacity>
       </View>
     </View>
