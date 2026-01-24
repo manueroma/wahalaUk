@@ -339,15 +339,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#FF6B6B',
   },
-  passButton .actionText: {
-    color: '#FF6B6B',
-  },
   likeButton: {
     borderWidth: 2,
     borderColor: '#4CAF50',
-  },
-  likeButton .actionText: {
-    color: '#4CAF50',
   },
   emptyTitle: {
     fontSize: 24,
