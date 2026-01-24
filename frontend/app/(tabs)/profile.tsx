@@ -75,6 +75,38 @@ export default function ProfileScreen() {
         </View>
       </View>
 
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Profile Details</Text>
+        
+        {user.height && (
+          <View style={styles.detailRow}>
+            <Ionicons name="resize" size={20} color="#666" />
+            <Text style={styles.detailLabel}>Height:</Text>
+            <Text style={styles.detailValue}>{user.height}</Text>
+          </View>
+        )}
+        
+        {user.looking_for && (
+          <View style={styles.detailRow}>
+            <Ionicons name="heart" size={20} color="#666" />
+            <Text style={styles.detailLabel}>Looking For:</Text>
+            <Text style={styles.detailValue}>
+              {user.looking_for === 'fun' && 'Fun / Casual Dating'}
+              {user.looking_for === 'see_where_it_goes' && 'Dating to See Where It Goes'}
+              {user.looking_for === 'marry' && 'Dating to Marry'}
+            </Text>
+          </View>
+        )}
+        
+        {user.instagram && (
+          <View style={styles.detailRow}>
+            <Ionicons name="logo-instagram" size={20} color="#666" />
+            <Text style={styles.detailLabel}>Instagram:</Text>
+            <Text style={styles.detailValue}>@{user.instagram}</Text>
+          </View>
+        )}
+      </View>
+
       {user.bio && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>About Me</Text>
@@ -236,6 +268,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     lineHeight: 24,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEE',
+  },
+  detailLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginLeft: 12,
+    marginRight: 8,
+  },
+  detailValue: {
+    fontSize: 14,
+    color: '#333',
+    flex: 1,
   },
   interestsContainer: {
     flexDirection: 'row',

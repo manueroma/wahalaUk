@@ -43,7 +43,7 @@ export default function PremiumScreen() {
   };
 
   const features = [
-    'Unlimited swipes',
+    'Unlimited swipes (no daily limit)',
     'See who liked you',
     'Priority in discovery',
     'Send unlimited messages',
