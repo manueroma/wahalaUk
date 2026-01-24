@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException, Depends, status, File, UploadFile, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr, Field, validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
@@ -43,6 +45,9 @@ roses_collection.create_index("receiver_id")
 
 app = FastAPI(title="WAHALA UK API")
 security = HTTPBearer()
+
+# Mount website static files
+app.mount("/static", StaticFiles(directory="/app/website"), name="static")
 
 # CORS
 app.add_middleware(
@@ -186,6 +191,11 @@ def get_payment_amount(payment_type: str) -> int:
     return amounts.get(payment_type, 0)
 
 # ============= ROUTES =============
+
+@app.get("/")
+async def root():
+    """Serve the marketing website"""
+    return FileResponse("/app/website/index.html")
 
 @app.get("/api/health")
 async def health_check():
@@ -816,6 +826,15 @@ async def stripe_webhook(payload: dict = Body(...)):
             )
     
     return {"status": "success"}
+
+@app.get("/api/logo")
+async def get_logo():
+    """Serve the WAHALA logo"""
+    logo_path = "/app/frontend/assets/images/wahala-logo.png"
+    if os.path.exists(logo_path):
+        return FileResponse(logo_path)
+    else:
+        raise HTTPException(status_code=404, detail="Logo not found")
 
 @app.get("/api/config/stripe")
 async def get_stripe_config():
