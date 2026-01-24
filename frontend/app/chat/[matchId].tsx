@@ -79,10 +79,30 @@ export default function ChatScreen() {
   };
 
   const sendSnapVideo = async () => {
+    // Check snap status first
+    try {
+      const statusResponse = await api.get(`/api/chat/snap-status/${matchId}`);
+      const snapStatus = statusResponse.data;
+      
+      if (!snapStatus.can_send_snap) {
+        Alert.alert(
+          'Premium Feature',
+          'You\'ve already used your free snap! Upgrade to Premium for unlimited snaps.',
+          [
+            { text: 'Maybe Later', style: 'cancel' },
+            { text: 'Upgrade', onPress: () => {/* Navigate to premium */} }
+          ]
+        );
+        return;
+      }
+    } catch (error) {
+      console.error('Failed to check snap status:', error);
+    }
+
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Videos,
       allowsEditing: true,
-      videoMaxDuration: 7,
+      videoMaxDuration: 9,  // Changed to 9 seconds
       quality: 0.5,
       base64: true,
     });
@@ -97,9 +117,24 @@ export default function ChatScreen() {
           message_type: 'snap',
         });
         await loadMessages();
-        Alert.alert('Snap Sent!', '7-second snap video sent successfully');
-      } catch (error) {
-        Alert.alert('Error', 'Failed to send snap');
+        
+        Alert.alert(
+          'Snap Sent!', 
+          '9-second snap video sent successfully! It can only be viewed once.'
+        );
+      } catch (error: any) {
+        if (error.response?.status === 403) {
+          Alert.alert(
+            'Upgrade Required',
+            error.response?.data?.detail || 'Premium required for more snaps',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Go Premium', onPress: () => {/* Navigate to premium */} }
+            ]
+          );
+        } else {
+          Alert.alert('Error', 'Failed to send snap');
+        }
       }
     }
   };
