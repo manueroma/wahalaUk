@@ -1,37 +1,72 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "WAHALA UK",
+    "slug": "wahala-uk",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "frontend",
-    "userInterfaceStyle": "automatic",
+    "icon": "./assets/images/wahala-logo.png",
+    "scheme": "wahalauk",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.wahalauk.app",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Select photos for your profile",
+        "NSCameraUsageDescription": "Take photos and videos to share",
+        "NSMicrophoneUsageDescription": "Record audio for video messages",
+        "NSLocationWhenInUseUsageDescription": "Show nearby matches"
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#000"
+        "foregroundImage": "./assets/images/wahala-logo.png",
+        "backgroundColor": "#FFFFFF"
       },
+      "package": "com.wahalauk.app",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECORD_AUDIO",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
       "edgeToEdgeEnabled": true
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/wahala-logo.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/wahala-logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#000"
+          "backgroundColor": "#FFFFFF"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Select photos for your dating profile",
+          "cameraPermission": "Take photos and videos to share with matches"
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Record audio for video snaps"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Show you potential matches nearby"
         }
       ]
     ],
