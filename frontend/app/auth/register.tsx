@@ -156,7 +156,7 @@ export default function RegisterScreen() {
 
           <TextInput
             style={styles.input}
-            placeholder="Height (e.g., 5'10\" or 178cm)"
+            placeholder="Height (e.g., 5'10 or 178cm)"
             placeholderTextColor="#999"
             value={formData.height}
             onChangeText={(text) => setFormData({ ...formData, height: text })}
