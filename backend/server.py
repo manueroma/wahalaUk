@@ -62,13 +62,14 @@ class UserRegister(BaseModel):
     age: int
     gender: str  # male, female, other
     location_city: str
-    location_country: str  # UK or US
+    location_country: str  # UK, US or Italy
     bio: Optional[str] = ""
     interests: Optional[List[str]] = []
     height: Optional[str] = ""
     education: Optional[str] = ""
     job: Optional[str] = ""
-    relationship_goal: Optional[str] = "serious"  # serious, casual, friendship
+    instagram: Optional[str] = ""
+    looking_for: Optional[str] = "see_where_it_goes"  # fun, see_where_it_goes, marry
     
     @validator('age')
     def age_must_be_valid(cls, v):
@@ -78,8 +79,14 @@ class UserRegister(BaseModel):
     
     @validator('location_country')
     def country_must_be_valid(cls, v):
-        if v not in ['UK', 'US']:
-            raise ValueError('Only UK and US are supported')
+        if v not in ['UK', 'US', 'Italy']:
+            raise ValueError('Only UK, US and Italy are supported')
+        return v
+    
+    @validator('looking_for')
+    def looking_for_must_be_valid(cls, v):
+        if v and v not in ['fun', 'see_where_it_goes', 'marry']:
+            raise ValueError('Invalid looking_for value')
         return v
 
 class UserLogin(BaseModel):
@@ -94,7 +101,8 @@ class ProfileUpdate(BaseModel):
     height: Optional[str] = None
     education: Optional[str] = None
     job: Optional[str] = None
-    relationship_goal: Optional[str] = None
+    instagram: Optional[str] = None
+    looking_for: Optional[str] = None
     location_city: Optional[str] = None
     location_country: Optional[str] = None
 
@@ -205,11 +213,14 @@ async def register(user_data: UserRegister):
         "height": user_data.height,
         "education": user_data.education,
         "job": user_data.job,
-        "relationship_goal": user_data.relationship_goal,
+        "instagram": user_data.instagram,
+        "looking_for": user_data.looking_for,
         "photos": [],
         "premium_status": "free",
         "premium_expiry": None,
         "roses_received": 0,
+        "swipes_today": 0,
+        "last_swipe_reset": datetime.utcnow(),
         "created_at": datetime.utcnow(),
         "last_active": datetime.utcnow(),
         "profile_complete": False
@@ -338,6 +349,35 @@ async def swipe(swipe_data: SwipeAction, current_user: dict = Depends(get_curren
     user_id = str(current_user["_id"])
     target_id = swipe_data.target_user_id
     
+    # Check if user is premium
+    is_premium = current_user.get("premium_status") == "premium"
+    
+    if not is_premium:
+        # Check swipe limit for free users (20 per day)
+        last_reset = current_user.get("last_swipe_reset", datetime.utcnow())
+        swipes_today = current_user.get("swipes_today", 0)
+        
+        # Reset counter if it's a new day
+        if datetime.utcnow().date() > last_reset.date():
+            swipes_today = 0
+            users_collection.update_one(
+                {"_id": current_user["_id"]},
+                {"$set": {"swipes_today": 0, "last_swipe_reset": datetime.utcnow()}}
+            )
+        
+        # Check if limit reached
+        if swipes_today >= 20:
+            raise HTTPException(
+                status_code=403,
+                detail="Daily swipe limit reached. Upgrade to Premium for unlimited swipes!"
+            )
+        
+        # Increment swipe counter
+        users_collection.update_one(
+            {"_id": current_user["_id"]},
+            {"$inc": {"swipes_today": 1}}
+        )
+    
     # Record the swipe
     swipes_collection.insert_one({
         "swiper_id": user_id,
@@ -345,6 +385,11 @@ async def swipe(swipe_data: SwipeAction, current_user: dict = Depends(get_curren
         "direction": swipe_data.direction,
         "created_at": datetime.utcnow()
     })
+    
+    # Calculate remaining swipes for response
+    remaining_swipes = None
+    if not is_premium:
+        remaining_swipes = 20 - (swipes_today + 1)
     
     # If right swipe, check for match
     if swipe_data.direction == "right":
@@ -370,10 +415,15 @@ async def swipe(swipe_data: SwipeAction, current_user: dict = Depends(get_curren
             return {
                 "matched": True,
                 "message": "It's a match!",
-                "match_id": str(match_doc["_id"]) if "_id" in match_doc else None
+                "match_id": str(match_doc["_id"]) if "_id" in match_doc else None,
+                "remaining_swipes": remaining_swipes
             }
     
-    return {"matched": False, "message": "Swipe recorded"}
+    return {
+        "matched": False,
+        "message": "Swipe recorded",
+        "remaining_swipes": remaining_swipes
+    }
 
 @app.get("/api/matches/my-matches")
 async def get_my_matches(current_user: dict = Depends(get_current_user)):
@@ -650,6 +700,36 @@ async def get_premium_status(current_user: dict = Depends(get_current_user)):
     return {
         "is_premium": is_premium,
         "expiry": expiry.isoformat() if expiry else None
+    }
+
+@app.get("/api/swipes/remaining")
+async def get_remaining_swipes(current_user: dict = Depends(get_current_user)):
+    """Get remaining swipes for today"""
+    is_premium = current_user.get("premium_status") == "premium"
+    
+    if is_premium:
+        return {
+            "unlimited": True,
+            "remaining": None
+        }
+    
+    last_reset = current_user.get("last_swipe_reset", datetime.utcnow())
+    swipes_today = current_user.get("swipes_today", 0)
+    
+    # Reset if new day
+    if datetime.utcnow().date() > last_reset.date():
+        swipes_today = 0
+        users_collection.update_one(
+            {"_id": current_user["_id"]},
+            {"$set": {"swipes_today": 0, "last_swipe_reset": datetime.utcnow()}}
+        )
+    
+    remaining = 20 - swipes_today
+    
+    return {
+        "unlimited": False,
+        "remaining": max(0, remaining),
+        "limit": 20
     }
 
 # ============= REPORTS ROUTES =============
