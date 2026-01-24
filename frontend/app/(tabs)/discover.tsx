@@ -194,6 +194,7 @@ export default function DiscoverScreen() {
           disabled={swiping}
         >
           <Ionicons name="close" size={36} color="#FF6B6B" />
+          <Text style={styles.actionText}>NO WAHALA</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -202,6 +203,7 @@ export default function DiscoverScreen() {
           disabled={swiping}
         >
           <Ionicons name="heart" size={36} color="#4CAF50" />
+          <Text style={styles.actionText}>WAHALA</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -315,9 +317,9 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   actionButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderRadius: 50,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
@@ -326,14 +328,26 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    minWidth: 140,
+  },
+  actionText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginTop: 4,
   },
   passButton: {
     borderWidth: 2,
     borderColor: '#FF6B6B',
   },
+  passButton .actionText: {
+    color: '#FF6B6B',
+  },
   likeButton: {
     borderWidth: 2,
     borderColor: '#4CAF50',
+  },
+  likeButton .actionText: {
+    color: '#4CAF50',
   },
   emptyTitle: {
     fontSize: 24,
