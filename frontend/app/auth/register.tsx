@@ -28,12 +28,15 @@ export default function RegisterScreen() {
     gender: 'male',
     location_city: '',
     location_country: 'UK',
+    height: '',
+    instagram: '',
+    looking_for: 'see_where_it_goes',
   });
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
-    if (!formData.email || !formData.password || !formData.name || !formData.age || !formData.location_city) {
-      Alert.alert('Error', 'Please fill in all fields');
+    if (!formData.email || !formData.password || !formData.name || !formData.age || !formData.location_city || !formData.height) {
+      Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
 
@@ -57,6 +60,9 @@ export default function RegisterScreen() {
         gender: formData.gender,
         location_city: formData.location_city,
         location_country: formData.location_country,
+        height: formData.height,
+        instagram: formData.instagram,
+        looking_for: formData.looking_for,
       });
 
       const { user, token } = response.data;
@@ -143,6 +149,38 @@ export default function RegisterScreen() {
               >
                 <Picker.Item label="United Kingdom" value="UK" />
                 <Picker.Item label="United States" value="US" />
+                <Picker.Item label="Italy" value="Italy" />
+              </Picker>
+            </View>
+          </View>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Height (e.g., 5'10\" or 178cm)"
+            placeholderTextColor="#999"
+            value={formData.height}
+            onChangeText={(text) => setFormData({ ...formData, height: text })}
+          />
+
+          <TextInput
+            style={styles.input}
+            placeholder="Instagram (optional)"
+            placeholderTextColor="#999"
+            value={formData.instagram}
+            onChangeText={(text) => setFormData({ ...formData, instagram: text })}
+            autoCapitalize="none"
+          />
+
+          <View style={styles.pickerContainer}>
+            <Text style={styles.label}>Looking For</Text>
+            <View style={styles.picker}>
+              <Picker
+                selectedValue={formData.looking_for}
+                onValueChange={(value) => setFormData({ ...formData, looking_for: value })}
+              >
+                <Picker.Item label="Fun / Casual Dating" value="fun" />
+                <Picker.Item label="Dating to See Where It Goes" value="see_where_it_goes" />
+                <Picker.Item label="Dating to Marry" value="marry" />
               </Picker>
             </View>
           </View>
