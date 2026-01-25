@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,9 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
+import api from '../../services/api';
+
+const ADMIN_EMAIL = 'wahalauk@gmail.com';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -21,6 +24,14 @@ export default function ProfileScreen() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    // Check if user is admin
+    if (user?.email === ADMIN_EMAIL) {
+      setIsAdmin(true);
+    }
+  }, [user]);
 
   const handleLogout = () => {
     Alert.alert(
