@@ -17,7 +17,10 @@ import { useAuthStore } from '../../store/authStore';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user, logout, deleteAccount } = useAuthStore();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleLogout = () => {
     Alert.alert(
@@ -35,6 +38,49 @@ export default function ProfileScreen() {
         },
       ]
     );
+  };
+
+  const handleDeleteAccount = () => {
+    // First warning
+    Alert.alert(
+      '⚠️ Delete Account',
+      'This will PERMANENTLY delete your account and all your data including:\n\n• Your profile and photos\n• All your matches\n• All your messages\n• Your roses and transactions\n\nThis action CANNOT be undone!',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'I Understand, Continue', 
+          style: 'destructive',
+          onPress: () => setShowDeleteModal(true)
+        },
+      ]
+    );
+  };
+
+  const confirmDeleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE') {
+      Alert.alert('Error', 'Please type DELETE to confirm');
+      return;
+    }
+
+    setIsDeleting(true);
+    const result = await deleteAccount();
+    setIsDeleting(false);
+
+    if (result.success) {
+      setShowDeleteModal(false);
+      Alert.alert(
+        'Account Deleted',
+        'Your account has been permanently deleted. We\'re sorry to see you go!',
+        [
+          {
+            text: 'OK',
+            onPress: () => router.replace('/auth/login')
+          }
+        ]
+      );
+    } else {
+      Alert.alert('Error', result.error || 'Failed to delete account. Please try again.');
+    }
   };
 
   const handlePremium = () => {
