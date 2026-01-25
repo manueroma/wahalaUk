@@ -154,6 +154,41 @@ class PaymentIntent(BaseModel):
     match_id: Optional[str] = None
     receiver_id: Optional[str] = None
 
+# ============= 2FA & SETTINGS MODELS =============
+
+class TwoFactorSetup(BaseModel):
+    """Enable/disable 2FA"""
+    enable: bool
+
+class TwoFactorVerify(BaseModel):
+    """Verify 2FA code"""
+    code: str
+    email: Optional[EmailStr] = None  # For login verification
+
+class UserSettings(BaseModel):
+    """User settings/preferences"""
+    notifications_matches: Optional[bool] = True
+    notifications_messages: Optional[bool] = True
+    notifications_roses: Optional[bool] = True
+    notifications_promotions: Optional[bool] = False
+    show_online_status: Optional[bool] = True
+    show_read_receipts: Optional[bool] = True
+    show_distance: Optional[bool] = True
+    discovery_enabled: Optional[bool] = True
+    age_min: Optional[int] = 18
+    age_max: Optional[int] = 100
+    distance_max: Optional[int] = 100  # km
+    gender_preference: Optional[str] = "all"  # male, female, all
+
+class BlockUserRequest(BaseModel):
+    """Block a user"""
+    user_id: str
+    reason: Optional[str] = ""
+
+class DeactivateAccount(BaseModel):
+    """Deactivate account temporarily"""
+    duration_days: Optional[int] = 30  # 0 = until manual reactivation
+
 # ============= AUTH HELPERS =============
 
 def hash_password(password: str) -> str:
