@@ -363,7 +363,7 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={handleDeactivateAccount}>
           <Ionicons name="time-outline" size={24} color="#666" />
           <Text style={styles.menuText}>Deactivate Account</Text>
           <Ionicons name="chevron-forward" size={24} color="#DDD" />
