@@ -17,7 +17,7 @@ import { useAuthStore } from '../../store/authStore';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, logout, deleteAccount } = useAuthStore();
+  const { user, logout, deleteAccount, token } = useAuthStore();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
