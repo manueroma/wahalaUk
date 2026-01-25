@@ -17,6 +17,9 @@ import base64
 import random
 import string
 import hashlib
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 load_dotenv()
 
@@ -25,6 +28,10 @@ MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017")
 SECRET_KEY = os.getenv("SECRET_KEY", "wahala-uk-secret-key-change-in-production")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
+
+# Email Configuration
+GMAIL_EMAIL = os.getenv("GMAIL_EMAIL", "wahalauk@gmail.com")
+GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "")
 
 # Initialize Stripe
 if STRIPE_SECRET_KEY:
