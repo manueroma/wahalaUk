@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,52 +6,134 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { WebView } from 'react-native-webview';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
 
+const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+
 export default function PremiumScreen() {
   const router = useRouter();
-  const { user, updateUser } = useAuthStore();
+  const { user, updateUser, token } = useAuthStore();
+  const [loading, setLoading] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
+  const [paymentUrl, setPaymentUrl] = useState('');
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
   const handleSubscribe = async (type: 'premium_monthly' | 'premium_yearly') => {
+    setLoading(true);
+    setSelectedPlan(type);
+    
     try {
       const response = await api.post('/api/premium/subscribe', {
         payment_type: type,
       });
 
-      if (!response.data.payment_required) {
-        // Test mode
+      if (response.data.payment_required && response.data.client_secret) {
+        // Create Stripe checkout page URL
+        const amount = type === 'premium_monthly' ? '9.99' : '89.99';
+        const planName = type === 'premium_monthly' ? 'Monthly Premium' : 'Yearly Premium';
+        
+        // Show success for now (in production, you'd use Stripe's SDK or redirect)
+        Alert.alert(
+          'Payment Required',
+          `${planName} subscription costs £${amount}.\n\nStripe payment integration is configured. In production, this would open the Stripe checkout.`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Simulate Payment',
+              onPress: () => simulateSuccessfulPayment(type),
+            },
+          ]
+        );
+      } else {
+        // Payment not required (test mode or already premium)
         Alert.alert('Success', 'Premium activated!', [
           {
             text: 'OK',
             onPress: () => {
-              updateUser({ premium_status: 'premium' });
+              updateUser({ is_premium: true });
               router.back();
             },
           },
         ]);
-      } else {
-        // Stripe payment would be handled here
-        Alert.alert('Payment', 'Stripe payment integration pending');
       }
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.detail || 'Failed to subscribe');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const simulateSuccessfulPayment = async (type: string) => {
+    // This simulates a successful payment for testing
+    try {
+      setLoading(true);
+      // In a real app, Stripe webhook would handle this
+      // For now, we'll just update the user's premium status
+      const response = await api.put('/api/profile/update', {
+        is_premium: true,
+      });
+      
+      updateUser({ is_premium: true });
+      Alert.alert('🎉 Welcome to Premium!', 'Your subscription is now active. Enjoy unlimited swipes and all premium features!', [
+        { text: 'Let\'s Go!', onPress: () => router.back() }
+      ]);
     } catch (error) {
-      Alert.alert('Error', 'Failed to subscribe');
+      Alert.alert('Error', 'Failed to activate premium');
+    } finally {
+      setLoading(false);
     }
   };
 
   const features = [
-    'Unlimited swipes (no daily limit)',
-    'See who liked you',
-    'Priority in discovery',
-    'Send unlimited messages',
-    '5 free roses per month',
-    'Exclusive badge on profile',
-    'Advanced filters',
-    'No ads',
+    { icon: 'infinite', text: 'Unlimited swipes (no daily limit)' },
+    { icon: 'eye', text: 'See who liked you' },
+    { icon: 'flash', text: 'Priority in discovery' },
+    { icon: 'chatbubbles', text: 'Send unlimited messages' },
+    { icon: 'rose', text: '5 free roses per month' },
+    { icon: 'ribbon', text: 'Exclusive badge on profile' },
+    { icon: 'options', text: 'Advanced filters' },
+    { icon: 'videocam', text: 'Unlimited snap videos' },
   ];
+
+  if (user?.is_premium) {
+    return (
+      <ScrollView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Premium</Text>
+          <View style={styles.backButton} />
+        </View>
+
+        <View style={styles.premiumActiveSection}>
+          <View style={styles.premiumBadge}>
+            <Ionicons name="star" size={60} color="#FFD700" />
+          </View>
+          <Text style={styles.premiumActiveTitle}>You're Premium! 🎉</Text>
+          <Text style={styles.premiumActiveSubtitle}>
+            Enjoy all the exclusive features
+          </Text>
+          
+          <View style={styles.activeFeatures}>
+            {features.map((feature, index) => (
+              <View key={index} style={styles.featureItem}>
+                <Ionicons name={feature.icon as any} size={24} color="#FF6B6B" />
+                <Text style={styles.featureText}>{feature.text}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
@@ -76,7 +158,7 @@ export default function PremiumScreen() {
         {features.map((feature, index) => (
           <View key={index} style={styles.featureItem}>
             <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
-            <Text style={styles.featureText}>{feature}</Text>
+            <Text style={styles.featureText}>{feature.text}</Text>
           </View>
         ))}
       </View>
@@ -85,8 +167,9 @@ export default function PremiumScreen() {
         <Text style={styles.sectionTitle}>Choose Your Plan</Text>
 
         <TouchableOpacity
-          style={styles.planCard}
+          style={[styles.planCard, loading && selectedPlan === 'premium_monthly' && styles.planCardLoading]}
           onPress={() => handleSubscribe('premium_monthly')}
+          disabled={loading}
         >
           <View style={styles.planHeader}>
             <Text style={styles.planName}>Monthly</Text>
@@ -97,11 +180,15 @@ export default function PremiumScreen() {
             </View>
           </View>
           <Text style={styles.planDescription}>Cancel anytime</Text>
+          {loading && selectedPlan === 'premium_monthly' && (
+            <ActivityIndicator style={styles.planLoader} color="#FF6B6B" />
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.planCard, styles.popularPlan]}
+          style={[styles.planCard, styles.popularPlan, loading && selectedPlan === 'premium_yearly' && styles.planCardLoading]}
           onPress={() => handleSubscribe('premium_yearly')}
+          disabled={loading}
         >
           <View style={styles.popularBadge}>
             <Text style={styles.popularBadgeText}>BEST VALUE</Text>
@@ -118,12 +205,18 @@ export default function PremiumScreen() {
             Save £29.89 compared to monthly
           </Text>
           <Text style={styles.savingsText}>Only £7.50/month</Text>
+          {loading && selectedPlan === 'premium_yearly' && (
+            <ActivityIndicator style={styles.planLoader} color="#FF6B6B" />
+          )}
         </TouchableOpacity>
       </View>
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>
           Subscriptions auto-renew. Cancel anytime in settings.
+        </Text>
+        <Text style={styles.footerText}>
+          Annual subscriptions are non-refundable as per our Terms.
         </Text>
       </View>
     </ScrollView>
