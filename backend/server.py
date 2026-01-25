@@ -92,6 +92,7 @@ class UserRegister(BaseModel):
     job: Optional[str] = ""
     instagram: Optional[str] = ""
     looking_for: Optional[str] = "see_where_it_goes"  # fun, see_where_it_goes, marry
+    referred_by_code: Optional[str] = None  # Referral code used during signup
     
     @validator('age')
     def age_must_be_valid(cls, v):
