@@ -63,7 +63,7 @@ export default function RegisterScreen() {
         gender: formData.gender,
         location_city: formData.location_city,
         location_country: formData.location_country,
-        height: formData.height,
+        height: `${formData.height} cm`,
         instagram: formData.instagram,
         looking_for: formData.looking_for,
       });
