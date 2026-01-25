@@ -53,6 +53,12 @@ affiliate_subscriptions_collection = db["affiliate_subscriptions"]
 otp_collection = db["otp_codes"]  # For 2FA
 blocked_users_collection = db["blocked_users"]
 user_settings_collection = db["user_settings"]
+referrals_collection = db["referrals"]  # For referral tracking
+
+# Create referral indexes
+users_collection.create_index("referral_code", unique=True, sparse=True)
+referrals_collection.create_index("referrer_id")
+referrals_collection.create_index("referred_id", unique=True)
 
 app = FastAPI(title="WAHALA UK API")
 security = HTTPBearer()
