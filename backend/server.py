@@ -971,6 +971,309 @@ async def delete_account(current_user: dict = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete account: {str(e)}")
 
+# ============= 2FA ROUTES =============
+
+@app.post("/api/auth/2fa/setup")
+async def setup_2fa(data: TwoFactorSetup, current_user: dict = Depends(get_current_user)):
+    """Enable or disable 2FA for user account"""
+    user_id = str(current_user["_id"])
+    
+    if data.enable:
+        # Generate OTP and send to user's email (simulated)
+        otp = generate_otp()
+        otp_hash = hash_otp(otp)
+        
+        # Store OTP with expiry
+        otp_collection.update_one(
+            {"user_id": user_id, "type": "2fa_setup"},
+            {
+                "$set": {
+                    "otp_hash": otp_hash,
+                    "expires_at": datetime.utcnow() + timedelta(minutes=10),
+                    "created_at": datetime.utcnow()
+                }
+            },
+            upsert=True
+        )
+        
+        # In production, send email with OTP
+        # For now, return OTP in response (only for testing)
+        return {
+            "message": "Verification code sent to your email",
+            "otp_for_testing": otp,  # Remove in production
+            "expires_in_minutes": 10
+        }
+    else:
+        # Disable 2FA
+        users_collection.update_one(
+            {"_id": current_user["_id"]},
+            {"$set": {"two_factor_enabled": False, "two_factor_secret": None}}
+        )
+        otp_collection.delete_many({"user_id": user_id})
+        
+        return {"message": "Two-factor authentication disabled"}
+
+@app.post("/api/auth/2fa/verify")
+async def verify_2fa(data: TwoFactorVerify, current_user: dict = Depends(get_current_user)):
+    """Verify 2FA code to complete setup"""
+    user_id = str(current_user["_id"])
+    
+    # Find OTP record
+    otp_record = otp_collection.find_one({
+        "user_id": user_id,
+        "type": "2fa_setup",
+        "expires_at": {"$gt": datetime.utcnow()}
+    })
+    
+    if not otp_record:
+        raise HTTPException(status_code=400, detail="No valid verification code found. Please request a new one.")
+    
+    if not verify_otp(data.code, otp_record["otp_hash"]):
+        raise HTTPException(status_code=400, detail="Invalid verification code")
+    
+    # Enable 2FA for user
+    users_collection.update_one(
+        {"_id": current_user["_id"]},
+        {"$set": {"two_factor_enabled": True}}
+    )
+    
+    # Delete used OTP
+    otp_collection.delete_one({"_id": otp_record["_id"]})
+    
+    return {"message": "Two-factor authentication enabled successfully"}
+
+@app.post("/api/auth/2fa/send-login-code")
+async def send_login_code(email: EmailStr = Body(..., embed=True)):
+    """Send 2FA code for login (for users with 2FA enabled)"""
+    user = users_collection.find_one({"email": email})
+    
+    if not user:
+        # Don't reveal if user exists
+        return {"message": "If your account exists, a verification code has been sent"}
+    
+    if not user.get("two_factor_enabled"):
+        return {"message": "2FA not enabled for this account", "requires_2fa": False}
+    
+    # Generate and store OTP
+    otp = generate_otp()
+    otp_hash = hash_otp(otp)
+    
+    otp_collection.update_one(
+        {"user_id": str(user["_id"]), "type": "login"},
+        {
+            "$set": {
+                "otp_hash": otp_hash,
+                "expires_at": datetime.utcnow() + timedelta(minutes=5),
+                "created_at": datetime.utcnow()
+            }
+        },
+        upsert=True
+    )
+    
+    # In production, send email
+    return {
+        "message": "Verification code sent to your email",
+        "requires_2fa": True,
+        "otp_for_testing": otp  # Remove in production
+    }
+
+@app.post("/api/auth/2fa/verify-login")
+async def verify_login_2fa(data: TwoFactorVerify):
+    """Verify 2FA code during login"""
+    if not data.email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    
+    user = users_collection.find_one({"email": data.email})
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Find OTP record
+    otp_record = otp_collection.find_one({
+        "user_id": str(user["_id"]),
+        "type": "login",
+        "expires_at": {"$gt": datetime.utcnow()}
+    })
+    
+    if not otp_record:
+        raise HTTPException(status_code=400, detail="No valid verification code found")
+    
+    if not verify_otp(data.code, otp_record["otp_hash"]):
+        raise HTTPException(status_code=400, detail="Invalid verification code")
+    
+    # Delete used OTP
+    otp_collection.delete_one({"_id": otp_record["_id"]})
+    
+    # Generate auth token
+    token = create_token(str(user["_id"]))
+    user = serialize_doc(user)
+    user.pop("password", None)
+    
+    return {
+        "user": user,
+        "token": token,
+        "message": "Login successful"
+    }
+
+@app.get("/api/auth/2fa/status")
+async def get_2fa_status(current_user: dict = Depends(get_current_user)):
+    """Get current 2FA status"""
+    return {
+        "two_factor_enabled": current_user.get("two_factor_enabled", False)
+    }
+
+# ============= SETTINGS ROUTES =============
+
+@app.get("/api/settings")
+async def get_settings(current_user: dict = Depends(get_current_user)):
+    """Get user settings"""
+    user_id = str(current_user["_id"])
+    
+    settings = user_settings_collection.find_one({"user_id": user_id})
+    if not settings:
+        # Return default settings
+        return get_default_settings()
+    
+    settings = serialize_doc(settings)
+    settings.pop("user_id", None)
+    return settings
+
+@app.put("/api/settings")
+async def update_settings(settings_data: UserSettings, current_user: dict = Depends(get_current_user)):
+    """Update user settings"""
+    user_id = str(current_user["_id"])
+    
+    update_data = {k: v for k, v in settings_data.dict().items() if v is not None}
+    update_data["user_id"] = user_id
+    update_data["updated_at"] = datetime.utcnow()
+    
+    user_settings_collection.update_one(
+        {"user_id": user_id},
+        {"$set": update_data},
+        upsert=True
+    )
+    
+    return {"message": "Settings updated successfully", "settings": update_data}
+
+# ============= BLOCKED USERS ROUTES =============
+
+@app.get("/api/blocked-users")
+async def get_blocked_users(current_user: dict = Depends(get_current_user)):
+    """Get list of blocked users"""
+    user_id = str(current_user["_id"])
+    
+    blocked = list(blocked_users_collection.find({"blocker_id": user_id}))
+    
+    result = []
+    for block in blocked:
+        blocked_user = users_collection.find_one({"_id": ObjectId(block["blocked_id"])})
+        if blocked_user:
+            result.append({
+                "_id": block["blocked_id"],
+                "name": blocked_user.get("name", "Unknown"),
+                "photo": blocked_user.get("photos", [None])[0],
+                "blocked_at": block.get("created_at", datetime.utcnow()).isoformat()
+            })
+    
+    return {"blocked_users": result, "count": len(result)}
+
+@app.post("/api/blocked-users/block")
+async def block_user(data: BlockUserRequest, current_user: dict = Depends(get_current_user)):
+    """Block a user"""
+    user_id = str(current_user["_id"])
+    
+    if data.user_id == user_id:
+        raise HTTPException(status_code=400, detail="Cannot block yourself")
+    
+    # Check if user exists
+    target_user = users_collection.find_one({"_id": ObjectId(data.user_id)})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check if already blocked
+    existing = blocked_users_collection.find_one({
+        "blocker_id": user_id,
+        "blocked_id": data.user_id
+    })
+    
+    if existing:
+        return {"message": "User is already blocked"}
+    
+    # Block user
+    blocked_users_collection.insert_one({
+        "blocker_id": user_id,
+        "blocked_id": data.user_id,
+        "reason": data.reason,
+        "created_at": datetime.utcnow()
+    })
+    
+    # Remove any existing matches
+    matches_collection.delete_many({
+        "$or": [
+            {"user1_id": user_id, "user2_id": data.user_id},
+            {"user1_id": data.user_id, "user2_id": user_id}
+        ]
+    })
+    
+    return {"message": "User blocked successfully"}
+
+@app.delete("/api/blocked-users/unblock/{user_id}")
+async def unblock_user(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Unblock a user"""
+    blocker_id = str(current_user["_id"])
+    
+    result = blocked_users_collection.delete_one({
+        "blocker_id": blocker_id,
+        "blocked_id": user_id
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User was not blocked")
+    
+    return {"message": "User unblocked successfully"}
+
+# ============= ACCOUNT DEACTIVATION ROUTES =============
+
+@app.post("/api/account/deactivate")
+async def deactivate_account(data: DeactivateAccount, current_user: dict = Depends(get_current_user)):
+    """Temporarily deactivate account"""
+    reactivate_date = None
+    if data.duration_days > 0:
+        reactivate_date = datetime.utcnow() + timedelta(days=data.duration_days)
+    
+    users_collection.update_one(
+        {"_id": current_user["_id"]},
+        {
+            "$set": {
+                "is_deactivated": True,
+                "deactivated_at": datetime.utcnow(),
+                "reactivate_at": reactivate_date,
+                "discovery_enabled": False
+            }
+        }
+    )
+    
+    return {
+        "message": "Account deactivated",
+        "reactivate_at": reactivate_date.isoformat() if reactivate_date else None
+    }
+
+@app.post("/api/account/reactivate")
+async def reactivate_account(current_user: dict = Depends(get_current_user)):
+    """Reactivate deactivated account"""
+    users_collection.update_one(
+        {"_id": current_user["_id"]},
+        {
+            "$set": {
+                "is_deactivated": False,
+                "deactivated_at": None,
+                "reactivate_at": None,
+                "discovery_enabled": True
+            }
+        }
+    )
+    
+    return {"message": "Account reactivated successfully"}
+
 # ============= REPORTS ROUTES =============
 
 @app.post("/api/reports/create")
