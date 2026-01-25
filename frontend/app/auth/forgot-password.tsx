@@ -37,17 +37,11 @@ export default function ForgotPasswordScreen() {
     try {
       const response = await api.post('/api/auth/password-reset/request', { email });
       
-      // For testing, show the code if returned (development only)
-      if (response.data.reset_code_for_testing) {
-        Alert.alert(
-          'Reset Code Sent',
-          `For testing, your code is: ${response.data.reset_code_for_testing}\n\nIn production, this would be sent to your email.`,
-          [{ text: 'OK', onPress: () => setStep('code') }]
-        );
-      } else {
-        Alert.alert('Success', response.data.message);
-        setStep('code');
-      }
+      Alert.alert(
+        '📧 Check Your Email',
+        'We\'ve sent a 6-digit code to your email address. Please check your inbox (and spam folder).',
+        [{ text: 'OK', onPress: () => setStep('code') }]
+      );
     } catch (error: any) {
       Alert.alert('Error', error.response?.data?.detail || 'Failed to send reset code');
     } finally {
