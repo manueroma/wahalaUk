@@ -381,4 +381,34 @@ const styles = StyleSheet.create({
     color: '#FF6B6B',
     fontWeight: 'bold',
   },
+  referralSection: {
+    marginBottom: 16,
+    marginTop: 8,
+    padding: 16,
+    backgroundColor: '#FFF9E6',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FFE082',
+  },
+  referralLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  referralInput: {
+    backgroundColor: '#FFFFFF',
+    marginBottom: 0,
+  },
+  referralSuccess: {
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: '#E8F5E9',
+    borderRadius: 8,
+  },
+  referralSuccessText: {
+    color: '#2E7D32',
+    fontSize: 13,
+    fontWeight: '500',
+  },
 });
