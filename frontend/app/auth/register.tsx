@@ -100,11 +100,22 @@ export default function RegisterScreen() {
         height: `${formData.height} cm`,
         instagram: formData.instagram,
         looking_for: formData.looking_for,
+        referred_by_code: formData.referral_code || null,
       });
 
-      const { user, token } = response.data;
+      const { user, token, bonus_roses, referred_by } = response.data;
       await login(user, token);
-      router.replace('/profile/setup');
+      
+      // Show welcome message with bonus roses if referred
+      if (bonus_roses && bonus_roses > 0) {
+        Alert.alert(
+          '🎉 Welcome to WAHALA UK!',
+          `Thanks for joining via ${referred_by}'s referral! You've received ${bonus_roses} free roses to get started! 🌹`,
+          [{ text: 'Awesome!', onPress: () => router.replace('/profile/setup') }]
+        );
+      } else {
+        router.replace('/profile/setup');
+      }
     } catch (error: any) {
       Alert.alert('Registration Failed', error.response?.data?.detail || 'Something went wrong');
     } finally {
