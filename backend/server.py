@@ -236,6 +236,37 @@ def get_payment_amount(payment_type: str) -> int:
     }
     return amounts.get(payment_type, 0)
 
+# ============= 2FA HELPER FUNCTIONS =============
+
+def generate_otp(length: int = 6) -> str:
+    """Generate a random OTP code"""
+    return ''.join(random.choices(string.digits, k=length))
+
+def hash_otp(otp: str) -> str:
+    """Hash OTP for secure storage"""
+    return hashlib.sha256(otp.encode()).hexdigest()
+
+def verify_otp(otp: str, hashed: str) -> bool:
+    """Verify OTP against hash"""
+    return hash_otp(otp) == hashed
+
+def get_default_settings() -> dict:
+    """Get default user settings"""
+    return {
+        "notifications_matches": True,
+        "notifications_messages": True,
+        "notifications_roses": True,
+        "notifications_promotions": False,
+        "show_online_status": True,
+        "show_read_receipts": True,
+        "show_distance": True,
+        "discovery_enabled": True,
+        "age_min": 18,
+        "age_max": 100,
+        "distance_max": 100,
+        "gender_preference": "all"
+    }
+
 # ============= ROUTES =============
 
 @app.get("/test")
