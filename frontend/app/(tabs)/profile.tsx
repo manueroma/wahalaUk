@@ -289,7 +289,7 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={24} color="#DDD" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={handleDeleteAccount}>
           <Ionicons name="trash-outline" size={24} color="#FF6B6B" />
           <Text style={[styles.menuText, styles.deleteText]}>Delete Account</Text>
           <Ionicons name="chevron-forward" size={24} color="#DDD" />
