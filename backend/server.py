@@ -201,6 +201,20 @@ class DeactivateAccount(BaseModel):
     """Deactivate account temporarily"""
     duration_days: Optional[int] = 30  # 0 = until manual reactivation
 
+# ============= PASSWORD RESET MODELS =============
+
+class PasswordResetRequest(BaseModel):
+    """Request password reset"""
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+
+class PasswordResetVerify(BaseModel):
+    """Verify reset code and set new password"""
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    code: str
+    new_password: str
+
 # ============= REPORT & MODERATION MODELS =============
 
 class ReportUser(BaseModel):
