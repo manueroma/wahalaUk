@@ -62,7 +62,10 @@ export default function EditProfileScreen() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(profile),
+        body: JSON.stringify({
+          ...profile,
+          height: `${profile.height} cm`,
+        }),
       });
 
       if (response.ok) {
