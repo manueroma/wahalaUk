@@ -999,8 +999,9 @@ async def get_messages(match_id: str, current_user: dict = Depends(get_current_u
     if not match["chat_unlocked"] and datetime.utcnow() < match["unlock_time"]:
         raise HTTPException(status_code=403, detail="Chat not unlocked yet")
     
-    # Get messages
-    messages = list(messages_collection.find({"match_id": match_id}).sort("created_at", 1))
+    # Get messages (limited to last 200 for performance)
+    messages = list(messages_collection.find({"match_id": match_id}).sort("created_at", -1).limit(200))
+    messages.reverse()  # Return in chronological order
     
     # Filter expired/viewed snaps
     result = []
