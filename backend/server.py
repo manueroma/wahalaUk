@@ -519,6 +519,22 @@ async def login(credentials: UserLogin):
     if not user or not verify_password(credentials.password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
+    # Check if user is banned
+    if user.get("is_banned"):
+        raise HTTPException(status_code=403, detail="Your account has been banned. Contact support at wahalauk@gmail.com")
+    
+    # Check if user is suspended
+    if user.get("is_suspended"):
+        suspended_until = user.get("suspended_until")
+        if suspended_until and suspended_until > datetime.utcnow():
+            raise HTTPException(status_code=403, detail=f"Your account is suspended until {suspended_until.strftime('%Y-%m-%d %H:%M')} UTC")
+        else:
+            # Suspension expired, clear it
+            users_collection.update_one(
+                {"_id": user["_id"]},
+                {"$set": {"is_suspended": False, "suspended_until": None}}
+            )
+    
     # Update last active
     users_collection.update_one(
         {"_id": user["_id"]},
@@ -534,6 +550,93 @@ async def login(credentials: UserLogin):
         "token": token,
         "message": "Login successful"
     }
+
+# ============= PASSWORD RESET ROUTES =============
+
+@app.post("/api/auth/password-reset/request")
+async def request_password_reset(data: PasswordResetRequest):
+    """Request a password reset code via email or phone"""
+    user = None
+    
+    if data.email:
+        user = users_collection.find_one({"email": data.email})
+    elif data.phone:
+        user = users_collection.find_one({"phone": data.phone})
+    
+    if not user:
+        # Don't reveal if user exists
+        return {"message": "If an account exists with this email/phone, a reset code has been sent."}
+    
+    # Generate reset code
+    reset_code = generate_otp(6)
+    code_hash = hash_otp(reset_code)
+    
+    # Store reset code
+    otp_collection.update_one(
+        {"user_id": str(user["_id"]), "type": "password_reset"},
+        {
+            "$set": {
+                "otp_hash": code_hash,
+                "expires_at": datetime.utcnow() + timedelta(minutes=15),
+                "created_at": datetime.utcnow(),
+                "email": data.email,
+                "phone": data.phone
+            }
+        },
+        upsert=True
+    )
+    
+    # In production, send email/SMS here
+    # For now, return the code (REMOVE IN PRODUCTION)
+    return {
+        "message": "Reset code sent! Check your email/phone.",
+        "reset_code_for_testing": reset_code,  # REMOVE IN PRODUCTION
+        "expires_in_minutes": 15
+    }
+
+@app.post("/api/auth/password-reset/verify")
+async def verify_password_reset(data: PasswordResetVerify):
+    """Verify reset code and set new password"""
+    user = None
+    
+    if data.email:
+        user = users_collection.find_one({"email": data.email})
+    elif data.phone:
+        user = users_collection.find_one({"phone": data.phone})
+    
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid email or phone")
+    
+    user_id = str(user["_id"])
+    
+    # Find reset code
+    otp_record = otp_collection.find_one({
+        "user_id": user_id,
+        "type": "password_reset",
+        "expires_at": {"$gt": datetime.utcnow()}
+    })
+    
+    if not otp_record:
+        raise HTTPException(status_code=400, detail="Reset code expired or not found. Please request a new one.")
+    
+    if not verify_otp(data.code, otp_record["otp_hash"]):
+        raise HTTPException(status_code=400, detail="Invalid reset code")
+    
+    # Validate new password
+    if len(data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    
+    # Update password
+    hashed_password = hash_password(data.new_password)
+    users_collection.update_one(
+        {"_id": user["_id"]},
+        {"$set": {"password": hashed_password}}
+    )
+    
+    # Delete used reset code
+    otp_collection.delete_one({"_id": otp_record["_id"]})
+    
+    return {"message": "Password reset successful! You can now login with your new password."}
 
 # ============= PROFILE ROUTES =============
 
