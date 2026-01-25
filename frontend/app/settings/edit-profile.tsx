@@ -137,13 +137,18 @@ export default function EditProfileScreen() {
             <Text style={styles.sectionTitle}>Details</Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Height</Text>
-              <TextInput
-                style={styles.input}
-                value={profile.height}
-                onChangeText={(text) => setProfile(prev => ({ ...prev, height: text }))}
-                placeholder="e.g., 5'10 or 178cm"
-              />
+              <Text style={styles.inputLabel}>Height (cm)</Text>
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={profile.height}
+                  onValueChange={(value) => setProfile(prev => ({ ...prev, height: value }))}
+                  style={styles.picker}
+                >
+                  {heightOptions.map((h) => (
+                    <Picker.Item key={h} label={`${h} cm`} value={h.toString()} />
+                  ))}
+                </Picker>
+              </View>
             </View>
 
             <View style={styles.inputGroup}>
