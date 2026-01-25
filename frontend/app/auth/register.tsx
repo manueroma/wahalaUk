@@ -16,6 +16,9 @@ import { Picker } from '@react-native-picker/picker';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 
+// Generate height options from 140cm to 220cm
+const heightOptions = Array.from({ length: 81 }, (_, i) => 140 + i);
+
 export default function RegisterScreen() {
   const router = useRouter();
   const login = useAuthStore((state) => state.login);
@@ -28,7 +31,7 @@ export default function RegisterScreen() {
     gender: 'male',
     location_city: '',
     location_country: 'UK',
-    height: '',
+    height: '170',
     instagram: '',
     looking_for: 'see_where_it_goes',
   });
