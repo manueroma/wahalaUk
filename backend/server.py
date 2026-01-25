@@ -1376,6 +1376,125 @@ async def get_stripe_config():
         "stripe_enabled": bool(STRIPE_SECRET_KEY)
     }
 
+# ============= SEED TEST USERS =============
+
+@app.post("/api/seed/test-users")
+async def seed_test_users():
+    """Create 4 test users (2 male, 2 female) for testing"""
+    test_users = [
+        {
+            "email": "marcus@test.com",
+            "password": hash_password("Test1234!"),
+            "name": "Marcus Johnson",
+            "age": 32,
+            "gender": "male",
+            "location_city": "London",
+            "location_country": "UK",
+            "height": "183 cm",
+            "instagram": "marcus_j",
+            "looking_for": "marry",
+            "bio": "Software engineer with a passion for travel and good food. Looking for someone to build a future with.",
+            "job": "Software Engineer",
+            "education": "Imperial College London",
+            "photos": [
+                "https://images.unsplash.com/photo-1570158268183-d296b2892211?w=400&h=600&fit=crop"
+            ],
+            "profile_complete": True,
+            "is_premium": False,
+            "roses_received": 5,
+            "created_at": datetime.utcnow(),
+        },
+        {
+            "email": "david@test.com",
+            "password": hash_password("Test1234!"),
+            "name": "David Williams",
+            "age": 28,
+            "gender": "male",
+            "location_city": "Manchester",
+            "location_country": "UK",
+            "height": "178 cm",
+            "instagram": "david_w",
+            "looking_for": "see_where_it_goes",
+            "bio": "Finance professional who loves football and cooking. Let's grab coffee and see where it goes!",
+            "job": "Investment Banker",
+            "education": "University of Manchester",
+            "photos": [
+                "https://images.unsplash.com/photo-1522529599102-193c0d76b5b6?w=400&h=600&fit=crop"
+            ],
+            "profile_complete": True,
+            "is_premium": True,
+            "roses_received": 12,
+            "created_at": datetime.utcnow(),
+        },
+        {
+            "email": "amara@test.com",
+            "password": hash_password("Test1234!"),
+            "name": "Amara Okonkwo",
+            "age": 29,
+            "gender": "female",
+            "location_city": "Birmingham",
+            "location_country": "UK",
+            "height": "168 cm",
+            "instagram": "amara_ok",
+            "looking_for": "marry",
+            "bio": "Medical doctor with a love for art and culture. Faith and family are important to me.",
+            "job": "Doctor",
+            "education": "University of Birmingham",
+            "photos": [
+                "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&h=600&fit=crop"
+            ],
+            "profile_complete": True,
+            "is_premium": False,
+            "roses_received": 24,
+            "created_at": datetime.utcnow(),
+        },
+        {
+            "email": "zara@test.com",
+            "password": hash_password("Test1234!"),
+            "name": "Zara Thompson",
+            "age": 26,
+            "gender": "female",
+            "location_city": "London",
+            "location_country": "UK",
+            "height": "165 cm",
+            "instagram": "zara_t",
+            "looking_for": "see_where_it_goes",
+            "bio": "Marketing manager who loves fitness and travel. Looking for genuine connections and good vibes.",
+            "job": "Marketing Manager",
+            "education": "King's College London",
+            "photos": [
+                "https://images.unsplash.com/photo-1589156280159-27698a70f29e?w=400&h=600&fit=crop"
+            ],
+            "profile_complete": True,
+            "is_premium": True,
+            "roses_received": 31,
+            "created_at": datetime.utcnow(),
+        },
+    ]
+    
+    created_users = []
+    for user_data in test_users:
+        # Check if user already exists
+        existing = users_collection.find_one({"email": user_data["email"]})
+        if existing:
+            created_users.append({"email": user_data["email"], "status": "already exists"})
+            continue
+        
+        # Insert new user
+        result = users_collection.insert_one(user_data)
+        created_users.append({
+            "email": user_data["email"],
+            "name": user_data["name"],
+            "gender": user_data["gender"],
+            "status": "created",
+            "id": str(result.inserted_id)
+        })
+    
+    return {
+        "message": "Test users seeded successfully",
+        "users": created_users
+    }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
