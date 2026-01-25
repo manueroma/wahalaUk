@@ -1746,6 +1746,200 @@ async def seed_test_users():
         "users": created_users
     }
 
+# ============= REFERRAL ROUTES =============
+
+@app.get("/api/referral/my-code")
+async def get_my_referral_code(current_user: dict = Depends(get_current_user)):
+    """Get user's referral code and link"""
+    referral_code = current_user.get("referral_code")
+    
+    # Generate one if doesn't exist
+    if not referral_code:
+        referral_code = generate_referral_code(current_user.get("name", "USER"))
+        users_collection.update_one(
+            {"_id": current_user["_id"]},
+            {"$set": {"referral_code": referral_code}}
+        )
+    
+    return {
+        "referral_code": referral_code,
+        "referral_link": f"https://wahalauk.com/invite/{referral_code}",
+        "share_message": f"Join me on WAHALA UK - the dating app for Black professionals! Use my code {referral_code} and get 5 free roses! 🌹 https://wahalauk.com/invite/{referral_code}"
+    }
+
+@app.get("/api/referral/stats")
+async def get_referral_stats(current_user: dict = Depends(get_current_user)):
+    """Get user's referral statistics"""
+    user_id = str(current_user["_id"])
+    
+    # Count referrals
+    total_referrals = referrals_collection.count_documents({"referrer_id": user_id})
+    completed_referrals = referrals_collection.count_documents({
+        "referrer_id": user_id,
+        "status": "completed"
+    })
+    pending_referrals = referrals_collection.count_documents({
+        "referrer_id": user_id,
+        "status": "pending"
+    })
+    
+    # Calculate roses earned
+    roses_earned = completed_referrals * 20
+    
+    # Get recent referrals
+    recent_referrals = list(referrals_collection.find(
+        {"referrer_id": user_id}
+    ).sort("created_at", DESCENDING).limit(10))
+    
+    referral_list = []
+    for ref in recent_referrals:
+        referred_user = users_collection.find_one({"_id": ObjectId(ref["referred_id"])})
+        if referred_user:
+            referral_list.append({
+                "name": referred_user.get("name", "Unknown"),
+                "status": ref["status"],
+                "created_at": ref["created_at"].isoformat(),
+                "reward": 20 if ref["status"] == "completed" else 0
+            })
+    
+    # Weekly stats
+    week_ago = datetime.utcnow() - timedelta(days=7)
+    weekly_referrals = referrals_collection.count_documents({
+        "referrer_id": user_id,
+        "created_at": {"$gte": week_ago}
+    })
+    
+    return {
+        "total_referrals": total_referrals,
+        "completed_referrals": completed_referrals,
+        "pending_referrals": pending_referrals,
+        "roses_earned": roses_earned,
+        "weekly_referrals": weekly_referrals,
+        "weekly_limit": 20,
+        "lifetime_limit": 500,
+        "can_refer_more": total_referrals < 500 and weekly_referrals < 20,
+        "recent_referrals": referral_list
+    }
+
+@app.post("/api/referral/check-criteria")
+async def check_referral_criteria(current_user: dict = Depends(get_current_user)):
+    """Check and update referral criteria for the current user"""
+    user_id = str(current_user["_id"])
+    
+    # Check if user was referred
+    referral = referrals_collection.find_one({"referred_id": user_id, "status": "pending"})
+    if not referral:
+        return {"message": "No pending referral", "eligible": False}
+    
+    # Check criteria
+    photos_count = len(current_user.get("photos", []))
+    has_photos = photos_count >= 3
+    
+    # Check if user has made any swipes
+    swipe_count = swipes_collection.count_documents({"user_id": user_id})
+    has_swiped = swipe_count > 0
+    
+    # Check if 24 hours have passed since registration
+    created_at = current_user.get("created_at", datetime.utcnow())
+    hours_since_creation = (datetime.utcnow() - created_at).total_seconds() / 3600
+    is_24h_active = hours_since_creation >= 24
+    
+    criteria = {
+        "photos_uploaded": has_photos,
+        "first_swipe": has_swiped,
+        "hours_active_24": is_24h_active
+    }
+    
+    # Update referral record
+    referrals_collection.update_one(
+        {"_id": referral["_id"]},
+        {"$set": {"criteria_met": criteria}}
+    )
+    
+    # Check if all criteria met
+    all_criteria_met = has_photos and has_swiped and is_24h_active
+    
+    if all_criteria_met:
+        # Complete the referral and award roses
+        referrer_id = referral["referrer_id"]
+        
+        # Check abuse limits
+        abuse_check = check_referral_abuse(referrer_id)
+        
+        if not abuse_check["weekly_limit_reached"] and not abuse_check["lifetime_limit_reached"]:
+            # Award 20 roses to referrer
+            users_collection.update_one(
+                {"_id": ObjectId(referrer_id)},
+                {
+                    "$inc": {
+                        "roses_received": 20,
+                        "total_referrals": 1,
+                        "total_roses_from_referrals": 20
+                    }
+                }
+            )
+            
+            # Mark referral as completed
+            referrals_collection.update_one(
+                {"_id": referral["_id"]},
+                {
+                    "$set": {
+                        "status": "completed",
+                        "completed_at": datetime.utcnow()
+                    }
+                }
+            )
+            
+            # Update referred user
+            users_collection.update_one(
+                {"_id": current_user["_id"]},
+                {"$set": {"referral_reward_pending": False}}
+            )
+            
+            return {
+                "message": "Congratulations! Your referrer has been rewarded with 20 roses!",
+                "criteria": criteria,
+                "all_met": True,
+                "reward_given": True
+            }
+    
+    return {
+        "message": "Keep going! Complete the criteria to reward your referrer.",
+        "criteria": criteria,
+        "all_met": all_criteria_met,
+        "reward_given": False,
+        "tips": {
+            "photos": "Upload at least 3 photos" if not has_photos else "✓ Photos uploaded",
+            "swipe": "Make your first swipe" if not has_swiped else "✓ First swipe done",
+            "time": f"Stay active for 24 hours ({int(hours_since_creation)}h so far)" if not is_24h_active else "✓ 24 hours active"
+        }
+    }
+
+@app.get("/api/referral/validate/{code}")
+async def validate_referral_code(code: str):
+    """Validate if a referral code exists and is valid"""
+    user = users_collection.find_one({"referral_code": code})
+    
+    if not user:
+        return {"valid": False, "message": "Invalid referral code"}
+    
+    # Check if referrer can still refer
+    referrer_id = str(user["_id"])
+    abuse_check = check_referral_abuse(referrer_id)
+    
+    if abuse_check["weekly_limit_reached"]:
+        return {"valid": False, "message": "This user has reached their weekly referral limit"}
+    
+    if abuse_check["lifetime_limit_reached"]:
+        return {"valid": False, "message": "This user has reached their referral limit"}
+    
+    return {
+        "valid": True,
+        "referrer_name": user.get("name", "A WAHALA user"),
+        "bonus_roses": 5,
+        "message": f"You'll get 5 free roses when you sign up using {user.get('name', 'this user')}'s code!"
+    }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
