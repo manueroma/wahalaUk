@@ -847,6 +847,58 @@ async def get_snap_status(match_id: str, current_user: dict = Depends(get_curren
         "requires_premium": not is_premium and has_used_free_snap
     }
 
+@app.delete("/api/auth/delete-account")
+async def delete_account(current_user: dict = Depends(get_current_user)):
+    """Permanently delete user account - NO RECOVERY"""
+    user_id = current_user["_id"]
+    user_id_str = str(user_id)
+    
+    try:
+        # Delete all user data permanently
+        # 1. Delete all swipes by this user
+        swipes_collection.delete_many({"swiper_id": user_id_str})
+        
+        # 2. Delete all swipes on this user
+        swipes_collection.delete_many({"swiped_user_id": user_id_str})
+        
+        # 3. Delete all messages sent by user
+        messages_collection.delete_many({"sender_id": user_id_str})
+        
+        # 4. Delete all messages received by user
+        messages_collection.delete_many({"receiver_id": user_id_str})
+        
+        # 5. Delete all roses sent by user
+        roses_collection.delete_many({"sender_id": user_id_str})
+        
+        # 6. Delete all roses received by user
+        roses_collection.delete_many({"receiver_id": user_id_str})
+        
+        # 7. Delete all matches involving user
+        matches_collection.delete_many({"$or": [
+            {"user1_id": user_id_str},
+            {"user2_id": user_id_str}
+        ]})
+        
+        # 8. Delete all reports made by user
+        reports_collection.delete_many({"reporter_id": user_id_str})
+        
+        # 9. Delete all reports about user
+        reports_collection.delete_many({"reported_user_id": user_id_str})
+        
+        # 10. Delete all transactions by user
+        transactions_collection.delete_many({"user_id": user_id_str})
+        
+        # 11. Finally, delete the user account itself
+        users_collection.delete_one({"_id": user_id})
+        
+        return {
+            "message": "Account permanently deleted",
+            "deleted": True,
+            "note": "All your data has been permanently erased. This action cannot be undone."
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete account: {str(e)}")
+
 # ============= REPORTS ROUTES =============
 
 @app.post("/api/reports/create")
