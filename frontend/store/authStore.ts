@@ -1,5 +1,8 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8001';
 
 interface User {
   _id: string;
@@ -30,7 +33,7 @@ interface AuthState {
   deleteAccount: () => Promise<{ success: boolean; error?: string }>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   token: null,
   isLoading: true,
@@ -45,9 +48,15 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: async () => {
-    await AsyncStorage.removeItem('token');
-    await AsyncStorage.removeItem('user');
-    set({ user: null, token: null });
+    try {
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('user');
+      set({ user: null, token: null });
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Force clear state even if AsyncStorage fails
+      set({ user: null, token: null });
+    }
   },
 
   loadAuth: async () => {
@@ -72,33 +81,30 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   deleteAccount: async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = get().token;
       if (!token) {
         return { success: false, error: 'Not authenticated' };
       }
 
-      const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
-      const response = await fetch(`${API_URL}/api/auth/delete-account`, {
-        method: 'DELETE',
+      const response = await axios.delete(`${API_BASE_URL}/api/auth/delete-account`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
 
-      if (response.ok) {
+      if (response.status === 200) {
         // Clear all local data
         await AsyncStorage.removeItem('token');
         await AsyncStorage.removeItem('user');
         set({ user: null, token: null });
         return { success: true };
       } else {
-        const error = await response.json();
-        return { success: false, error: error.detail || 'Failed to delete account' };
+        return { success: false, error: 'Failed to delete account' };
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Delete account error:', error);
-      return { success: false, error: 'Network error. Please try again.' };
+      return { success: false, error: error.response?.data?.detail || 'Network error. Please try again.' };
     }
   },
 }));
