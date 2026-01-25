@@ -25,9 +25,11 @@ load_dotenv()
 
 # Configuration
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017")
+DB_NAME = os.getenv("DB_NAME", "wahala_uk")
 SECRET_KEY = os.getenv("SECRET_KEY", "wahala-uk-secret-key-change-in-production")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
+APP_BASE_URL = os.getenv("APP_BASE_URL", "http://localhost:3000")
 
 # Email Configuration
 GMAIL_EMAIL = os.getenv("GMAIL_EMAIL", "wahalauk@gmail.com")
@@ -39,7 +41,7 @@ if STRIPE_SECRET_KEY:
 
 # MongoDB setup
 client = MongoClient(MONGO_URL)
-db = client["wahala_uk"]
+db = client[DB_NAME]
 users_collection = db["users"]
 matches_collection = db["matches"]
 messages_collection = db["messages"]
