@@ -201,6 +201,27 @@ class DeactivateAccount(BaseModel):
     """Deactivate account temporarily"""
     duration_days: Optional[int] = 30  # 0 = until manual reactivation
 
+# ============= REPORT & MODERATION MODELS =============
+
+class ReportUser(BaseModel):
+    """Report a user"""
+    reported_user_id: str
+    reason: str  # fake_profile, inappropriate_content, harassment, spam, other
+    description: Optional[str] = ""
+
+class AdminAction(BaseModel):
+    """Admin action on a user"""
+    user_id: str
+    action: str  # warn, suspend_24h, suspend_7d, ban, unban
+    reason: str
+    internal_notes: Optional[str] = ""
+
+class AdminReviewReport(BaseModel):
+    """Admin review a report"""
+    report_id: str
+    action: str  # dismiss, warn, suspend, ban
+    notes: Optional[str] = ""
+
 # ============= AUTH HELPERS =============
 
 def hash_password(password: str) -> str:
