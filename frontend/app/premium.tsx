@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,11 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Modal,
+  Linking,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { WebView } from 'react-native-webview';
+import * as WebBrowser from 'expo-web-browser';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
 
@@ -19,11 +19,40 @@ const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
 export default function PremiumScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { user, updateUser, token } = useAuthStore();
   const [loading, setLoading] = useState(false);
-  const [showPayment, setShowPayment] = useState(false);
-  const [paymentUrl, setPaymentUrl] = useState('');
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
+
+  // Check for returning from payment
+  useEffect(() => {
+    if (params.session_id && params.type) {
+      verifyPayment(params.session_id as string, params.type as string);
+    }
+  }, [params]);
+
+  const verifyPayment = async (sessionId: string, paymentType: string) => {
+    setVerifying(true);
+    try {
+      const response = await api.post('/api/payment/verify-session', {
+        session_id: sessionId,
+      });
+
+      if (response.data.success) {
+        updateUser({ is_premium: true });
+        Alert.alert(
+          '🎉 Welcome to Premium!',
+          'Your subscription is now active. Enjoy unlimited swipes and all premium features!',
+          [{ text: 'Awesome!', onPress: () => router.replace('/(tabs)/discover') }]
+        );
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.detail || 'Failed to verify payment');
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   const handleSubscribe = async (type: 'premium_monthly' | 'premium_yearly') => {
     setLoading(true);
@@ -34,60 +63,35 @@ export default function PremiumScreen() {
         payment_type: type,
       });
 
-      if (response.data.payment_required && response.data.client_secret) {
-        // Create Stripe checkout page URL
-        const amount = type === 'premium_monthly' ? '9.99' : '89.99';
-        const planName = type === 'premium_monthly' ? 'Monthly Premium' : 'Yearly Premium';
-        
-        // Show success for now (in production, you'd use Stripe's SDK or redirect)
-        Alert.alert(
-          'Payment Required',
-          `${planName} subscription costs £${amount}.\n\nStripe payment integration is configured. In production, this would open the Stripe checkout.`,
-          [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Simulate Payment',
-              onPress: () => simulateSuccessfulPayment(type),
-            },
-          ]
-        );
-      } else {
-        // Payment not required (test mode or already premium)
+      if (response.data.checkout_url) {
+        // Open Stripe Checkout in browser
+        const result = await WebBrowser.openBrowserAsync(response.data.checkout_url, {
+          dismissButtonStyle: 'close',
+          presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+        });
+
+        // After browser closes, check if payment was successful
+        if (result.type === 'cancel' || result.type === 'dismiss') {
+          // User closed the browser - they may have completed payment
+          // Refresh user data to check premium status
+          Alert.alert(
+            'Payment Status',
+            'If you completed your payment, your premium status will be updated shortly. Pull down to refresh.',
+            [{ text: 'OK' }]
+          );
+        }
+      } else if (!response.data.payment_required) {
+        // Test mode - premium activated directly
+        updateUser({ is_premium: true });
         Alert.alert('Success', 'Premium activated!', [
-          {
-            text: 'OK',
-            onPress: () => {
-              updateUser({ is_premium: true });
-              router.back();
-            },
-          },
+          { text: 'OK', onPress: () => router.back() },
         ]);
       }
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.detail || 'Failed to subscribe');
+      Alert.alert('Error', error.response?.data?.detail || 'Failed to start checkout');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const simulateSuccessfulPayment = async (type: string) => {
-    // This simulates a successful payment for testing
-    try {
-      setLoading(true);
-      // In a real app, Stripe webhook would handle this
-      // For now, we'll just update the user's premium status
-      const response = await api.put('/api/profile/update', {
-        is_premium: true,
-      });
-      
-      updateUser({ is_premium: true });
-      Alert.alert('🎉 Welcome to Premium!', 'Your subscription is now active. Enjoy unlimited swipes and all premium features!', [
-        { text: 'Let\'s Go!', onPress: () => router.back() }
-      ]);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to activate premium');
-    } finally {
-      setLoading(false);
+      setSelectedPlan(null);
     }
   };
 
@@ -101,6 +105,15 @@ export default function PremiumScreen() {
     { icon: 'options', text: 'Advanced filters' },
     { icon: 'videocam', text: 'Unlimited snap videos' },
   ];
+
+  if (verifying) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FF6B6B" />
+        <Text style={styles.loadingText}>Verifying your payment...</Text>
+      </View>
+    );
+  }
 
   if (user?.is_premium) {
     return (
@@ -151,6 +164,25 @@ export default function PremiumScreen() {
         <Text style={styles.heroSubtitle}>
           Get the most out of WAHALA UK with exclusive features
         </Text>
+      </View>
+
+      {/* Payment Methods Badge */}
+      <View style={styles.paymentMethodsSection}>
+        <Text style={styles.paymentMethodsTitle}>Secure Payment</Text>
+        <View style={styles.paymentIcons}>
+          <View style={styles.paymentBadge}>
+            <Ionicons name="card" size={20} color="#666" />
+            <Text style={styles.paymentText}>Credit Card</Text>
+          </View>
+          <View style={styles.paymentBadge}>
+            <Ionicons name="card-outline" size={20} color="#666" />
+            <Text style={styles.paymentText}>Debit Card</Text>
+          </View>
+          <View style={styles.paymentBadge}>
+            <Ionicons name="logo-apple" size={20} color="#666" />
+            <Text style={styles.paymentText}>Apple Pay</Text>
+          </View>
+        </View>
       </View>
 
       <View style={styles.featuresSection}>
@@ -212,6 +244,10 @@ export default function PremiumScreen() {
       </View>
 
       <View style={styles.footer}>
+        <View style={styles.securePayment}>
+          <Ionicons name="lock-closed" size={16} color="#4CAF50" />
+          <Text style={styles.secureText}>Secured by Stripe</Text>
+        </View>
         <Text style={styles.footerText}>
           Subscriptions auto-renew. Cancel anytime in settings.
         </Text>
