@@ -348,6 +348,7 @@ async def register(user_data: UserRegister):
         "job": user_data.job,
         "instagram": user_data.instagram,
         "looking_for": user_data.looking_for,
+        "referred_by_code": user_data.referred_by_code,
         "photos": [],
         "premium_status": "free",
         "premium_expiry": None,
