@@ -352,6 +352,17 @@ def check_referral_abuse(referrer_id: str, ip_address: str = None) -> dict:
         "suspicious_ip": same_ip_count >= 3
     }
 
+def is_admin(user: dict) -> bool:
+    """Check if user is admin"""
+    return user.get("email") == ADMIN_EMAIL
+
+def get_user_warning_count(user_id: str) -> int:
+    """Get the number of active warnings for a user"""
+    return warnings_collection.count_documents({
+        "user_id": user_id,
+        "status": "active"
+    })
+
 # ============= ROUTES =============
 
 @app.get("/test")
