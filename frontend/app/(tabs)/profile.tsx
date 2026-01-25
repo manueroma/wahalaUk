@@ -216,32 +216,13 @@ export default function ProfileScreen() {
 
         <TouchableOpacity 
           style={styles.menuItem}
-          onPress={() => Alert.alert(
-            '📧 Contact Us', 
-            'Email: wahalauk@gmail.com\n\nWe typically respond within 24 hours.',
-            [
-              { text: 'OK' }
-            ]
-          )}
+          onPress={() => router.push('/auth/terms')}
         >
           <Ionicons name="mail-outline" size={24} color="#666" />
           <View style={styles.menuTextContainer}>
             <Text style={styles.menuText}>Contact Us</Text>
             <Text style={styles.menuSubtext}>wahalauk@gmail.com</Text>
           </View>
-          <Ionicons name="chevron-forward" size={24} color="#DDD" />
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.menuItem}
-          onPress={() => Alert.alert(
-            '🛡️ Safety Tips',
-            '1. Never share personal info like address or bank details\n\n2. Video chat before meeting in person\n\n3. Meet in public places for first dates\n\n4. Tell a friend where you\'re going\n\n5. Trust your instincts\n\n6. Report suspicious behavior',
-            [{ text: 'Got it!' }]
-          )}
-        >
-          <Ionicons name="shield-checkmark-outline" size={24} color="#27AE60" />
-          <Text style={styles.menuText}>Safety Tips</Text>
           <Ionicons name="chevron-forward" size={24} color="#DDD" />
         </TouchableOpacity>
 
