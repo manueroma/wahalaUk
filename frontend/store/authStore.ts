@@ -27,6 +27,7 @@ interface AuthState {
   logout: () => Promise<void>;
   loadAuth: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
+  deleteAccount: () => Promise<{ success: boolean; error?: string }>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
