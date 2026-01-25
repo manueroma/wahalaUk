@@ -235,6 +235,15 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Settings</Text>
         
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/settings/invite')}>
+          <Ionicons name="gift" size={24} color="#FF6B6B" />
+          <View style={styles.menuTextContainer}>
+            <Text style={styles.menuText}>Invite Friends</Text>
+            <Text style={styles.menuSubtext}>Earn 20 roses per referral 🌹</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={24} color="#DDD" />
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.menuItem} onPress={handlePremium}>
           <Ionicons name="star-outline" size={24} color="#FF6B6B" />
           <Text style={styles.menuText}>Premium Subscription</Text>
