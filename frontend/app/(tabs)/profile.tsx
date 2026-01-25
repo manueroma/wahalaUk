@@ -623,4 +623,11 @@ const styles = StyleSheet.create({
   disabledButton: {
     backgroundColor: '#CCCCCC',
   },
+  logoutConfirmButton: {
+    flex: 1,
+    backgroundColor: '#FF6B6B',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
 });
