@@ -786,8 +786,8 @@ async def get_potential_matches(current_user: dict = Depends(get_current_user)):
     """Get users to swipe on"""
     user_id = current_user["_id"]
     
-    # Get users already swiped
-    swiped_users = swipes_collection.find({"swiper_id": str(user_id)})
+    # Get users already swiped (with limit for performance)
+    swiped_users = swipes_collection.find({"swiper_id": str(user_id)}, {"swiped_user_id": 1}).limit(5000)
     swiped_ids = [ObjectId(s["swiped_user_id"]) for s in swiped_users]
     swiped_ids.append(user_id)  # Exclude self
     
