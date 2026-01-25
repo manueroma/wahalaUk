@@ -185,43 +185,49 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={24} color="#DDD" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/settings/edit-profile')}>
           <Ionicons name="person-outline" size={24} color="#666" />
           <Text style={styles.menuText}>Edit Profile</Text>
           <Ionicons name="chevron-forward" size={24} color="#DDD" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/settings/security')}>
+          <Ionicons name="shield-checkmark-outline" size={24} color="#27AE60" />
+          <Text style={styles.menuText}>Security & 2FA</Text>
+          <Ionicons name="chevron-forward" size={24} color="#DDD" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/settings/notifications')}>
           <Ionicons name="notifications-outline" size={24} color="#666" />
           <Text style={styles.menuText}>Notifications</Text>
           <Ionicons name="chevron-forward" size={24} color="#DDD" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/settings/privacy')}>
           <Ionicons name="shield-outline" size={24} color="#666" />
           <Text style={styles.menuText}>Privacy & Safety</Text>
           <Ionicons name="chevron-forward" size={24} color="#DDD" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/settings/blocked-users')}>
           <Ionicons name="eye-off-outline" size={24} color="#666" />
           <Text style={styles.menuText}>Blocked Users</Text>
           <Ionicons name="chevron-forward" size={24} color="#DDD" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/settings/discovery')}>
           <Ionicons name="location-outline" size={24} color="#666" />
           <Text style={styles.menuText}>Discovery Preferences</Text>
           <Ionicons name="chevron-forward" size={24} color="#DDD" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert('Coming Soon', 'Language settings will be available in a future update.')}>
           <Ionicons name="language-outline" size={24} color="#666" />
           <Text style={styles.menuText}>Language & Region</Text>
           <Ionicons name="chevron-forward" size={24} color="#DDD" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert('Coming Soon', 'Payment methods will be available once Stripe is configured.')}>
           <Ionicons name="card-outline" size={24} color="#666" />
           <Text style={styles.menuText}>Payment Methods</Text>
           <Ionicons name="chevron-forward" size={24} color="#DDD" />
