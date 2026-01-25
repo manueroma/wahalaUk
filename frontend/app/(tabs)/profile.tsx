@@ -306,6 +306,65 @@ export default function ProfileScreen() {
         <Text style={styles.footerText}>WAHALA UK v1.0.0</Text>
         <Text style={styles.footerText}>Made with love for the Black community</Text>
       </View>
+
+      {/* Delete Account Confirmation Modal */}
+      <Modal
+        visible={showDeleteModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDeleteModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Ionicons name="warning" size={48} color="#FF3B30" />
+              <Text style={styles.modalTitle}>Final Confirmation</Text>
+            </View>
+            
+            <Text style={styles.modalText}>
+              This is your last chance to cancel. To confirm permanent deletion, type{' '}
+              <Text style={styles.deleteWord}>DELETE</Text> below:
+            </Text>
+            
+            <TextInput
+              style={styles.deleteInput}
+              placeholder="Type DELETE to confirm"
+              value={deleteConfirmText}
+              onChangeText={setDeleteConfirmText}
+              autoCapitalize="characters"
+              autoCorrect={false}
+            />
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => {
+                  setShowDeleteModal(false);
+                  setDeleteConfirmText('');
+                }}
+                disabled={isDeleting}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[
+                  styles.confirmDeleteButton,
+                  deleteConfirmText !== 'DELETE' && styles.disabledButton
+                ]}
+                onPress={confirmDeleteAccount}
+                disabled={deleteConfirmText !== 'DELETE' || isDeleting}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.confirmDeleteText}>Delete Forever</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
