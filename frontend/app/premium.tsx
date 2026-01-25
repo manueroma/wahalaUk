@@ -264,6 +264,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F5F5',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -300,6 +311,36 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 8,
     textAlign: 'center',
+  },
+  paymentMethodsSection: {
+    backgroundColor: '#FFFFFF',
+    marginTop: 2,
+    padding: 16,
+    alignItems: 'center',
+  },
+  paymentMethodsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 12,
+  },
+  paymentIcons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  paymentBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  paymentText: {
+    fontSize: 12,
+    color: '#666',
   },
   featuresSection: {
     backgroundColor: '#FFFFFF',
@@ -401,6 +442,17 @@ const styles = StyleSheet.create({
   footer: {
     padding: 24,
     alignItems: 'center',
+  },
+  securePayment: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 6,
+  },
+  secureText: {
+    fontSize: 14,
+    color: '#4CAF50',
+    fontWeight: '600',
   },
   footerText: {
     fontSize: 12,
