@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   ScrollView,
   Image,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Picker } from '@react-native-picker/picker';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
@@ -21,6 +21,7 @@ const heightOptions = Array.from({ length: 81 }, (_, i) => 140 + i);
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const login = useAuthStore((state) => state.login);
   const [formData, setFormData] = useState({
     email: '',
@@ -34,8 +35,41 @@ export default function RegisterScreen() {
     height: '170',
     instagram: '',
     looking_for: 'see_where_it_goes',
+    referral_code: '',
   });
   const [loading, setLoading] = useState(false);
+  const [referrerName, setReferrerName] = useState('');
+
+  // Check for referral code from URL params
+  useEffect(() => {
+    if (params.ref) {
+      setFormData(prev => ({ ...prev, referral_code: params.ref as string }));
+      validateReferralCode(params.ref as string);
+    }
+  }, [params.ref]);
+
+  const validateReferralCode = async (code: string) => {
+    if (!code || code.length < 5) return;
+    try {
+      const response = await api.get(`/api/referral/validate/${code}`);
+      if (response.data.valid) {
+        setReferrerName(response.data.referrer_name);
+      } else {
+        setReferrerName('');
+      }
+    } catch (error) {
+      setReferrerName('');
+    }
+  };
+
+  const handleReferralCodeChange = (code: string) => {
+    setFormData(prev => ({ ...prev, referral_code: code.toUpperCase() }));
+    if (code.length >= 10) {
+      validateReferralCode(code.toUpperCase());
+    } else {
+      setReferrerName('');
+    }
+  };
 
   const handleRegister = async () => {
     if (!formData.email || !formData.password || !formData.name || !formData.age || !formData.location_city || !formData.height) {
