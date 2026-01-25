@@ -304,6 +304,74 @@ def verify_otp(otp: str, hashed: str) -> bool:
     """Verify OTP against hash"""
     return hash_otp(otp) == hashed
 
+# ============= EMAIL HELPER FUNCTIONS =============
+
+def send_email(to_email: str, subject: str, html_content: str) -> bool:
+    """Send email using Gmail SMTP"""
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = f"WAHALA UK <{GMAIL_EMAIL}>"
+        msg['To'] = to_email
+        
+        html_part = MIMEText(html_content, 'html')
+        msg.attach(html_part)
+        
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(GMAIL_EMAIL, GMAIL_APP_PASSWORD)
+            server.sendmail(GMAIL_EMAIL, to_email, msg.as_string())
+        
+        print(f"Email sent successfully to {to_email}")
+        return True
+    except Exception as e:
+        print(f"Failed to send email: {e}")
+        return False
+
+def send_password_reset_email(to_email: str, reset_code: str) -> bool:
+    """Send password reset email with code"""
+    subject = "🔐 WAHALA UK - Password Reset Code"
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 500px; margin: 0 auto; padding: 20px; }}
+            .header {{ text-align: center; padding: 20px 0; }}
+            .logo {{ font-size: 28px; font-weight: bold; color: #FF6B6B; }}
+            .code-box {{ background: #F5F5F5; border-radius: 12px; padding: 20px; text-align: center; margin: 20px 0; }}
+            .code {{ font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #FF6B6B; }}
+            .footer {{ text-align: center; color: #999; font-size: 12px; margin-top: 30px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <div class="logo">❤️ WAHALA UK</div>
+                <p>Find Your Love</p>
+            </div>
+            
+            <h2>Password Reset Request</h2>
+            <p>Hi there,</p>
+            <p>You requested to reset your password. Use the code below to complete the process:</p>
+            
+            <div class="code-box">
+                <div class="code">{reset_code}</div>
+            </div>
+            
+            <p><strong>This code expires in 15 minutes.</strong></p>
+            <p>If you didn't request this, please ignore this email or contact us if you have concerns.</p>
+            
+            <div class="footer">
+                <p>© 2025 WAHALA UK - Made with love for the Black community</p>
+                <p>Questions? Reply to this email or contact wahalauk@gmail.com</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    return send_email(to_email, subject, html_content)
+
 def get_default_settings() -> dict:
     """Get default user settings"""
     return {
