@@ -257,6 +257,26 @@ export default function RegisterScreen() {
             secureTextEntry
           />
 
+          {/* Referral Code Input */}
+          <View style={styles.referralSection}>
+            <Text style={styles.referralLabel}>Have a referral code? (Optional)</Text>
+            <TextInput
+              style={[styles.input, styles.referralInput]}
+              placeholder="e.g., WAHALA-MARCUS7X"
+              placeholderTextColor="#999"
+              value={formData.referral_code}
+              onChangeText={handleReferralCodeChange}
+              autoCapitalize="characters"
+            />
+            {referrerName && (
+              <View style={styles.referralSuccess}>
+                <Text style={styles.referralSuccessText}>
+                  ✓ Referred by {referrerName} - You'll get 5 free roses! 🌹
+                </Text>
+              </View>
+            )}
+          </View>
+
           <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleRegister}
