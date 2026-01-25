@@ -33,7 +33,7 @@ export default function ProfileScreen() {
     }
   }, [user]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     Alert.alert(
       'Logout',
       'Are you sure you want to logout?',
@@ -43,8 +43,17 @@ export default function ProfileScreen() {
           text: 'Logout', 
           style: 'destructive',
           onPress: async () => {
-            await logout();
-            router.replace('/auth/login');
+            try {
+              await logout();
+              // Force navigation to login
+              setTimeout(() => {
+                router.replace('/auth/login');
+              }, 100);
+            } catch (error) {
+              console.error('Logout error:', error);
+              // Still try to navigate
+              router.replace('/auth/login');
+            }
           }
         },
       ]
