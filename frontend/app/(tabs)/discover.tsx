@@ -174,7 +174,7 @@ export default function DiscoverScreen() {
             <Text style={styles.bio} numberOfLines={2}>{currentUser.bio}</Text>
           )}
 
-          {currentUser.interests.length > 0 && (
+          {currentUser.interests && currentUser.interests.length > 0 && (
             <View style={styles.interestsContainer}>
               {currentUser.interests.slice(0, 3).map((interest, index) => (
                 <View key={index} style={styles.interestTag}>
