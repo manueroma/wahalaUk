@@ -900,19 +900,32 @@ async def get_my_matches(current_user: dict = Depends(get_current_user)):
     """Get all matches for current user"""
     user_id = str(current_user["_id"])
     
-    # Find matches
+    # Find matches (limited to 100 for performance)
     matches = list(matches_collection.find({
         "$or": [
             {"user1_id": user_id},
             {"user2_id": user_id}
         ]
-    }).sort("matched_at", DESCENDING))
+    }).sort("matched_at", DESCENDING).limit(100))
+    
+    # Collect all other user IDs first (avoid N+1 query)
+    other_user_ids = []
+    for match in matches:
+        other_id = match["user2_id"] if match["user1_id"] == user_id else match["user1_id"]
+        other_user_ids.append(ObjectId(other_id))
+    
+    # Batch fetch all other users in one query
+    other_users_map = {}
+    if other_user_ids:
+        other_users = users_collection.find({"_id": {"$in": other_user_ids}})
+        for u in other_users:
+            other_users_map[str(u["_id"])] = u
     
     result = []
     for match in matches:
-        # Get the other user
+        # Get the other user from our map
         other_user_id = match["user2_id"] if match["user1_id"] == user_id else match["user1_id"]
-        other_user = users_collection.find_one({"_id": ObjectId(other_user_id)})
+        other_user = other_users_map.get(other_user_id)
         
         if other_user:
             other_user = serialize_doc(other_user)
