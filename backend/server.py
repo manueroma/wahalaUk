@@ -274,6 +274,58 @@ def get_default_settings() -> dict:
         "gender_preference": "all"
     }
 
+def generate_referral_code(name: str) -> str:
+    """Generate a unique referral code for a user"""
+    # Clean name and take first part
+    clean_name = ''.join(c for c in name.upper() if c.isalpha())[:6]
+    if len(clean_name) < 3:
+        clean_name = "WAHALA"
+    
+    # Add random alphanumeric suffix
+    suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+    code = f"WAHALA-{clean_name}{suffix}"
+    
+    # Ensure uniqueness
+    while users_collection.find_one({"referral_code": code}):
+        suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+        code = f"WAHALA-{clean_name}{suffix}"
+    
+    return code
+
+def check_referral_abuse(referrer_id: str, ip_address: str = None) -> dict:
+    """Check if referral might be abusive"""
+    now = datetime.utcnow()
+    week_ago = now - timedelta(days=7)
+    
+    # Count referrals this week
+    weekly_count = referrals_collection.count_documents({
+        "referrer_id": referrer_id,
+        "created_at": {"$gte": week_ago}
+    })
+    
+    # Count lifetime referrals
+    lifetime_count = referrals_collection.count_documents({
+        "referrer_id": referrer_id
+    })
+    
+    # Check for same IP abuse (if provided)
+    same_ip_count = 0
+    if ip_address:
+        same_ip_count = referrals_collection.count_documents({
+            "referrer_id": referrer_id,
+            "referred_ip": ip_address,
+            "created_at": {"$gte": week_ago}
+        })
+    
+    return {
+        "weekly_count": weekly_count,
+        "lifetime_count": lifetime_count,
+        "same_ip_count": same_ip_count,
+        "weekly_limit_reached": weekly_count >= 20,
+        "lifetime_limit_reached": lifetime_count >= 500,
+        "suspicious_ip": same_ip_count >= 3
+    }
+
 # ============= ROUTES =============
 
 @app.get("/test")
