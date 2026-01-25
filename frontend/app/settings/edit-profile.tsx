@@ -344,4 +344,14 @@ const styles = StyleSheet.create({
   bottomPadding: {
     height: 40,
   },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 12,
+    backgroundColor: '#FAFAFA',
+    overflow: 'hidden',
+  },
+  picker: {
+    height: 50,
+  },
 });
