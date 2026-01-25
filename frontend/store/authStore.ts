@@ -69,4 +69,36 @@ export const useAuthStore = create<AuthState>((set) => ({
   updateUser: (updates) => set((state) => ({
     user: state.user ? { ...state.user, ...updates } : null
   })),
+
+  deleteAccount: async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+      const response = await fetch(`${API_URL}/api/auth/delete-account`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        // Clear all local data
+        await AsyncStorage.removeItem('token');
+        await AsyncStorage.removeItem('user');
+        set({ user: null, token: null });
+        return { success: true };
+      } else {
+        const error = await response.json();
+        return { success: false, error: error.detail || 'Failed to delete account' };
+      }
+    } catch (error) {
+      console.error('Delete account error:', error);
+      return { success: false, error: 'Network error. Please try again.' };
+    }
+  },
 }));
