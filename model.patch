@@ -1,0 +1,20 @@
+diff --git a/backend/server.py b/backend/server.py
+index 6a8123b..35aa366 100644
+--- a/backend/server.py
++++ b/backend/server.py
+@@ -92,6 +92,7 @@ class UserRegister(BaseModel):
+     job: Optional[str] = ""
+     instagram: Optional[str] = ""
+     looking_for: Optional[str] = "see_where_it_goes"  # fun, see_where_it_goes, marry
++    referred_by_code: Optional[str] = None  # Referral code used during signup
+     
+     @validator('age')
+     def age_must_be_valid(cls, v):
+@@ -347,6 +348,7 @@ async def register(user_data: UserRegister):
+         "job": user_data.job,
+         "instagram": user_data.instagram,
+         "looking_for": user_data.looking_for,
++        "referred_by_code": user_data.referred_by_code,
+         "photos": [],
+         "premium_status": "free",
+         "premium_expiry": None,
