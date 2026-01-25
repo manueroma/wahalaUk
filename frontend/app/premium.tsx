@@ -298,6 +298,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#EEE',
   },
+  planCardLoading: {
+    opacity: 0.7,
+  },
   popularPlan: {
     borderColor: '#FF6B6B',
     position: 'relative',
@@ -356,6 +359,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 4,
   },
+  planLoader: {
+    marginTop: 12,
+  },
   footer: {
     padding: 24,
     alignItems: 'center',
@@ -364,5 +370,32 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
     textAlign: 'center',
+    marginBottom: 4,
+  },
+  // Premium active styles
+  premiumActiveSection: {
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    padding: 40,
+  },
+  premiumBadge: {
+    backgroundColor: '#FFF9E6',
+    borderRadius: 50,
+    padding: 20,
+    marginBottom: 20,
+  },
+  premiumActiveTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  premiumActiveSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 8,
+  },
+  activeFeatures: {
+    marginTop: 32,
+    width: '100%',
   },
 });
