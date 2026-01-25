@@ -379,10 +379,18 @@ async def health_check():
 # ============= AUTH ROUTES =============
 
 @app.post("/api/auth/register")
-async def register(user_data: UserRegister):
+async def register(user_data: UserRegister, request: Request = None):
     # Check if user exists
     if users_collection.find_one({"email": user_data.email}):
         raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Generate unique referral code for new user
+    referral_code = generate_referral_code(user_data.name)
+    
+    # Check if referred by someone
+    referred_by_user = None
+    if user_data.referred_by_code:
+        referred_by_user = users_collection.find_one({"referral_code": user_data.referred_by_code})
     
     # Create user
     user_doc = {
@@ -393,35 +401,65 @@ async def register(user_data: UserRegister):
         "gender": user_data.gender,
         "location_city": user_data.location_city,
         "location_country": user_data.location_country,
-        "bio": user_data.bio,
-        "interests": user_data.interests,
         "height": user_data.height,
-        "education": user_data.education,
-        "job": user_data.job,
         "instagram": user_data.instagram,
         "looking_for": user_data.looking_for,
-        "referred_by_code": user_data.referred_by_code,
         "photos": [],
         "premium_status": "free",
+        "is_premium": False,
         "premium_expiry": None,
-        "roses_received": 0,
+        "roses_received": 5 if referred_by_user else 0,  # 5 bonus roses if referred
         "swipes_today": 0,
         "last_swipe_reset": datetime.utcnow(),
         "created_at": datetime.utcnow(),
         "last_active": datetime.utcnow(),
-        "profile_complete": False
+        "profile_complete": False,
+        "referral_code": referral_code,
+        "referred_by_code": user_data.referred_by_code,
+        "referred_by_user_id": str(referred_by_user["_id"]) if referred_by_user else None,
+        "referral_reward_pending": True if referred_by_user else False,  # Reward pending until criteria met
+        "referral_criteria_met": {
+            "photos_uploaded": False,
+            "first_swipe": False,
+            "hours_active_24": False
+        },
+        "total_referrals": 0,
+        "total_roses_from_referrals": 0
     }
     
     result = users_collection.insert_one(user_doc)
-    token = create_token(str(result.inserted_id))
+    new_user_id = str(result.inserted_id)
     
-    user_doc["_id"] = str(result.inserted_id)
+    # Create referral record if referred
+    if referred_by_user:
+        referral_record = {
+            "referrer_id": str(referred_by_user["_id"]),
+            "referred_id": new_user_id,
+            "referred_email": user_data.email,
+            "referral_code_used": user_data.referred_by_code,
+            "status": "pending",  # pending, completed, clawback
+            "reward_amount": 20,
+            "created_at": datetime.utcnow(),
+            "completed_at": None,
+            "criteria_met": {
+                "photos_uploaded": False,
+                "first_swipe": False,
+                "hours_active_24": False
+            }
+        }
+        referrals_collection.insert_one(referral_record)
+    
+    token = create_token(new_user_id)
+    
+    user_doc["_id"] = new_user_id
     user_doc.pop("password")
     
     return {
         "user": user_doc,
         "token": token,
-        "message": "Registration successful"
+        "message": "Registration successful",
+        "bonus_roses": 5 if referred_by_user else 0,
+        "referred_by": referred_by_user["name"] if referred_by_user else None
     }
 
 @app.post("/api/auth/login")
