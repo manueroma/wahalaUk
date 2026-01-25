@@ -157,13 +157,19 @@ export default function RegisterScreen() {
             </View>
           </View>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Height (e.g., 5'10 or 178cm)"
-            placeholderTextColor="#999"
-            value={formData.height}
-            onChangeText={(text) => setFormData({ ...formData, height: text })}
-          />
+          <View style={styles.pickerContainer}>
+            <Text style={styles.label}>Height (cm)</Text>
+            <View style={styles.picker}>
+              <Picker
+                selectedValue={formData.height}
+                onValueChange={(value) => setFormData({ ...formData, height: value })}
+              >
+                {heightOptions.map((h) => (
+                  <Picker.Item key={h} label={`${h} cm`} value={h.toString()} />
+                ))}
+              </Picker>
+            </View>
+          </View>
 
           <TextInput
             style={styles.input}
