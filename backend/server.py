@@ -1251,8 +1251,8 @@ async def create_checkout_session(
                 'quantity': 1,
             }],
             mode='payment',
-            success_url=f'https://wahala-dating.preview.emergentagent.com/payment-success?session_id={{CHECKOUT_SESSION_ID}}&type={payment_type}',
-            cancel_url='https://wahala-dating.preview.emergentagent.com/',
+            success_url=f'{APP_BASE_URL}/payment-success?session_id={{CHECKOUT_SESSION_ID}}&type={payment_type}',
+            cancel_url=f'{APP_BASE_URL}/',
             metadata={
                 'type': payment_type,
                 'user_id': user_id,
