@@ -246,6 +246,18 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Settings</Text>
         
+        {/* Admin Dashboard - Only visible to admin */}
+        {isAdmin && (
+          <TouchableOpacity style={[styles.menuItem, styles.adminMenuItem]} onPress={() => router.push('/admin')}>
+            <Ionicons name="shield-checkmark" size={24} color="#9C27B0" />
+            <View style={styles.menuTextContainer}>
+              <Text style={[styles.menuText, styles.adminMenuText]}>Admin Dashboard</Text>
+              <Text style={styles.menuSubtext}>Manage users & reports</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color="#9C27B0" />
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/settings/invite')}>
           <Ionicons name="gift" size={24} color="#FF6B6B" />
           <View style={styles.menuTextContainer}>
