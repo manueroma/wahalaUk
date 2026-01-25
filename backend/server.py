@@ -1101,8 +1101,8 @@ async def subscribe_premium(payment_data: PaymentIntent, current_user: dict = De
                 'quantity': 1,
             }],
             mode='payment',
-            success_url=f'https://wahaladating.preview.emergentagent.com/payment-success?session_id={{CHECKOUT_SESSION_ID}}&type={payment_type}',
-            cancel_url='https://wahaladating.preview.emergentagent.com/premium',
+            success_url=f'https://wahala-dating.preview.emergentagent.com/payment-success?session_id={{CHECKOUT_SESSION_ID}}&type={payment_type}',
+            cancel_url='https://wahala-dating.preview.emergentagent.com/premium',
             metadata={
                 'type': payment_type,
                 'user_id': str(current_user["_id"])
@@ -1161,8 +1161,8 @@ async def create_checkout_session(
                 'quantity': 1,
             }],
             mode='payment',
-            success_url=f'https://wahaladating.preview.emergentagent.com/payment-success?session_id={{CHECKOUT_SESSION_ID}}&type={payment_type}',
-            cancel_url='https://wahaladating.preview.emergentagent.com/',
+            success_url=f'https://wahala-dating.preview.emergentagent.com/payment-success?session_id={{CHECKOUT_SESSION_ID}}&type={payment_type}',
+            cancel_url='https://wahala-dating.preview.emergentagent.com/',
             metadata={
                 'type': payment_type,
                 'user_id': user_id,

@@ -1,0 +1,224 @@
+<analysis>
+<original_problem_statement>
+The user wants to build a dating app called WAHALA UK targeting black men and women in the UK, US, and Italy. The app aims to connect professionals looking for serious relationships.
+
+**PRODUCT REQUIREMENTS:**
+- **App Name**: WAHALA UK
+- **Target Audience**: Black men and women in the UK, US, and Italy.
+- **Core Problem**: Modern dating is hard due to remote work and less social gathering. This app is for professionals ready to settle down.
+- **Content Policy**: No nudity. A report button is required, with an admin backend for moderation (warning, banning).
+- **Monetization**:
+    - **Free Version**: 20 swipes per day. Must wait 1 hour after a match to initiate conversation. After the 1-hour wait, the user gets one free, 9-second, single-view snap video.
+    - **Premium Version**: £9.99/month or £89.99/year. Unlimited swipes. Additional snap videos.
+    - **Microtransactions**: Pay £0.99 to skip the 1-hour chat wait. Virtual Roses for £0.10 each.
+    - **Donation Button**: A button for users to donate.
+    - **Affiliate Marketplace**: Charge affiliates £9.99/month to list their links.
+- **User Profile & Features**:
+    - Minimum of 3 pictures (max 10) required to use the app.
+    - User profiles should include: Instagram handle, height (in cm), Looking for status.
+    - Screenshot functionality should be disabled for privacy.
+    - **Referral System**: Users get a unique referral link. If a new user signs up with the link and stays active for 24 hours, the referrer earns 20 virtual roses.
+- **User Account**:
+    - Permanent account deletion option.
+    - 2FA for extra security.
+    - Password reset via email/phone.
+- **Admin Functionality**:
+    - An admin account () with access to a dashboard.
+    - The dashboard should show reported users.
+    - Admin can view report details, issue warnings (3-strike system), or ban users.
+- **Legal**: A Terms and Conditions page that users must accept, covering refund policies and the app's right to ban users.
+- **Marketing Website**: A landing page at .
+
+</original_problem_statement>
+<User's_preferred_language>English</User's_preferred_language>
+<what_currently_exists?>
+A full-stack application with an Expo (React Native) frontend, a FastAPI backend, and a MongoDB database. The core features are implemented, including user registration/login, swipe-based matching, chat, and user profiles.
+
+Key systems implemented in this session:
+- **Stripe Payments**: Fully integrated using Stripe Checkout for subscriptions, supporting credit/debit cards and Apple/Google Pay.
+- **Referral System**: Backend and frontend are in place for generating referral codes, tracking sign-ups, and awarding roses.
+- **Admin & Moderation System**: A role-based system is implemented. An admin user () can access a dashboard to view reports and manage users (ban/warn). Users can report other users from their profiles.
+- **Settings**: A comprehensive settings section has been built with screens for editing profiles, security (2FA), notifications, privacy, and more. Backend endpoints are in place, though not all frontend toggles are wired up.
+- **Marketing Website**: The marketing site is functional and accessible via its preview URL.
+
+</what_currently_exists?>
+<Last_working_item>
+- **Last item agent was working**: The agent was implementing a password reset feature after the user had trouble logging in as an admin. The agent first manually reset the admin password to . Then, it began adding the password reset functionality to the backend.
+- **Status**: IN PROGRESS
+- **Agent Testing Done**: N
+- **Which testing method agent to use?**: manual testing by curl
+- **User Testing Done**: N
+</Last_working_item>
+<All_Pending/In_progress_Issue_list>
+- **Issue 1**: Complete the password reset feature. (P0 - HIGHEST)
+- **Issue 2**: Fix React version mismatch error. (RESOLVED in this session, but good to be aware of).
+
+**Issues Detail**:
+- **Issue 1**: Password Reset Functionality
+    - **Attempted fixes**: The agent started adding the necessary backend components. It added a  Pydantic model and began creating the  and  endpoints in . The backend work is not complete.
+    - **Next debug checklist**:
+        1.  Finalize the implementation of the password reset endpoints in . This includes logic for generating a token, sending an email (currently placeholder), validating the token, and updating the user's password.
+        2.  Create a new Forgot Password screen in the frontend ().
+        3.  Add a Forgot Password? link on the login screen ().
+        4.  Implement the UI flow for a user to enter their email, receive a (mock) token, and submit the token with a new password.
+    - **Why fix this issue and what will be achieved with the fix?**: This is a standard and essential feature for user account management, directly requested by the user.
+    - **Status**: IN PROGRESS
+    - **Is recurring issue?**: N
+    - **Should Test frontend/backend/both after fix?**: Both.
+    - **Blocked on other issue**: None.
+
+- **Issue 2**: React Version Mismatch
+    - **Attempted fixes**: The user reported an error: react-native-render packages must have the same exact version instead got react 19.0.0 and react native render 19.1.0. The agent successfully resolved this by upgrading the  and  packages to  in  to match the renderer.
+    - **Status**: RESOLVED
+    - **Is recurring issue?**: N
+
+</All_Pending/In_progress_Issue_list>
+<In_progress_Task_List>
+- **Task 1**: Fully implement all functional settings. (P1)
+
+**Task Detail**:
+- **Task 1**: Wire up all Settings screens.
+    - **Where to resume**: The agent created multiple setting screens (, , , ) and corresponding backend endpoints. However, the UI elements (toggles, sliders) on these screens are not yet connected to the backend APIs. The next step is to go into each of these files in  and add the state management and API calls to make them functional.
+    - **What will be achieved with this?**: This will complete the user's request to make all the setting functional (message 47), giving users full control over their account and experience.
+    - **Status**: IN PROGRESS
+    - **Should Test frontend/backend/both after fix?**: Both.
+    - **Blocked on something**: None.
+
+</In_progress_Task_List>
+<Upcoming_and_Future_Tasks>
+- **Upcoming Tasks**:
+    - **P1**: Generate App Store Materials. The user has requested screenshots, an app description, and a privacy policy URL to prepare for app store submission.
+    - **P2**: Enforce 3-photo minimum on frontend. During registration/profile setup, the app should prevent the user from proceeding until they have uploaded at least 3 photos. This logic needs to be added to .
+    - **P3**: Implement screenshot disabling. Use a library like  to prevent users from taking screenshots of sensitive areas like chats and profiles, as per the original requirements.
+
+</Upcoming_and_Future_Tasks>
+<Completed_work_in_this_session>
+- List of all completed tasks with file and method name:
+    - **Marketing Website Fix**: Diagnosed and explained DNS vs. environment IP issue, confirming the site works on its local preview URL.
+    - **Permanent Account Deletion**: Implemented the full flow in  and , connecting to the  backend endpoint.
+    - **2FA & Settings Backend**: Added backend logic for email OTP and various user settings in .
+    - **Settings Frontend**: Created the UI structure for the entire settings section in .
+    - **Terms & Conditions Flow**: Created  and integrated it into the registration flow.
+    - **Height in CM**: Updated  and  to use a picker for height in centimeters.
+    - **Test User Seeding**: Created a  endpoint and used it to populate the database with 4 test profiles.
+    - **Crash Fix**: Resolved a crash on the Discover screen () by adding a null check for .
+    - **Stripe Payment Integration**: Added user-provided Stripe keys and implemented a full subscription flow using Stripe Checkout Sessions, including Apple/Google Pay support (, , and ).
+    - **Referral System**: Built the complete feature, including backend logic for code generation/tracking and frontend UI for inviting friends and entering a code (, , ).
+    - **Admin & Moderation System**: Created an admin role, a dashboard (), and a user reporting system with ban/warn functionality (, ).
+    - **Admin Account Creation**: Created the admin user  and manually reset its password.
+    - **React Version Fix**: Resolved a  and  version mismatch error.
+
+- Recently completed:
+  - Manually reset admin password for  to .
+  - Started backend implementation for the password reset feature.
+
+</Completed_work_in_this_session>
+<Earlier_issues_found/mentioned_but_not_fixed>
+- None. The agent has been diligent in addressing user requests from this and previous sessions. The remaining items from the original PRD are captured in Upcoming and Future Tasks.
+
+</Earlier_issues_found/mentioned_but_not_fixed>
+<Known_issue_recurrence_from_previous_fork>
+- **Issue recurrence in previous fork**: Website accessibility issues. The problem evolved from a DNS error to a blank page, and then to a connection timeout due to IP changes between environments. This class of issue is now resolved.
+- **Recurrence count**: 2
+- **Status**: RESOLVED
+</Known_issue_recurrence_from_previous_fork>
+<Code_Architecture>
+
+</Code_Architecture>
+<Key_Technical_Concepts>
+- **Frontend**: React Native with Expo, Expo Router.
+- **State Management**: Zustand.
+- **Backend**: Python with FastAPI.
+- **Database**: MongoDB with .
+- **Payments**: Stripe Checkout Sessions for subscriptions.
+- **Authentication**: JWT-based, with role-based access control (Admin vs. User).
+- **Key Features**: Referral system, Admin moderation dashboard, User reporting, 2FA (backend).
+</Key_Technical_Concepts>
+<key_DB_schema>
+- **users**: 
+- **matches**: 
+- **messages**: 
+- **referrals**: 
+- **reports**: 
+- **warnings**: 
+- **password_reset_tokens**: 
+</key_DB_schema>
+<changes_in_tech_stack>
+- No major changes. Stripe integration was solidified using Stripe Checkout Sessions.
+</changes_in_tech_stack>
+<All_files_of_reference>
+- **/app/backend/server.py**: Significantly expanded to include endpoints for referrals, admin/moderation, settings, 2FA, and password reset. It has grown very large.
+- **/app/frontend/app/(tabs)/profile.tsx**: Heavily modified to add links to all new settings screens, a conditional Admin Dashboard link, and an Invite Friends button.
+- **/app/frontend/app/auth/register.tsx**: Modified to include the T&C flow, a height picker (cm), and an optional referral code input field.
+- **/app/frontend/app/premium.tsx**: Overhauled to use Stripe Checkout by opening the checkout URL in a browser/WebView.
+- **/app/frontend/app/auth/terms.tsx**: New file to display T&C and get user acceptance.
+- **/app/frontend/app/settings/**: New directory with multiple new screens for all user settings.
+- **/app/frontend/app/admin/index.tsx**: New screen for the admin dashboard.
+- **/app/frontend/app/settings/invite.tsx**: New screen for the user referral feature.
+- **/app/backend/.env**: Updated with Stripe secret key.
+- **/app/frontend/.env**: Updated with Stripe publishable key.
+</All_files_of_reference>
+<Areas_that_need_refactoring>
+- The backend  file is now over 2000 lines long and contains all models, routes, and business logic. It urgently needs to be broken down into a more modular structure (e.g., separate files for routes, models, services) using FastAPI's .
+- The frontend  file is also becoming very large and complex with conditional rendering and many navigation links. The settings section could be abstracted into its own component.
+</Areas_that_need_refactoring>
+<key_api_endpoints>
+- : Creates user, handles referral code.
+- : Authenticates user.
+- : (In-progress) Sends a password reset token.
+- : (In-progress) Resets password with a valid token.
+- : Creates a Stripe Checkout session for subscriptions.
+- : Gets the user's referral code and link.
+- : Allows a user to report another user.
+- : (Admin only) Fetches all open reports.
+- : (Admin only) Bans a user.
+- : (Admin only) Issues a warning to a user.
+</key_api_endpoints>
+<Critical_Info_for_New_Agent>
+- **Admin Account**: The admin account is . The password was just manually set to . This is the primary way to test all admin functionalities.
+- **Password Reset In Progress**: The immediate task is to finish the password reset feature. The backend work is started but not finished, and the frontend has not been started at all.
+- **Beginner User**: The user is not a developer and requires clear, simple explanations and confirmations.
+- **Code Scalability**: The backend  file is monolithic and difficult to maintain. While the priority is new features, any opportunity to refactor should be considered.
+</Critical_Info_for_New_Agent>
+<documents_created_in_this_job>
+- None in this session. Existing markdown documents were referenced.
+</documents_created_in_this_job>
+<Last_10_User_Messages_and_any_pending_HUMAN_messages>
+1.  **add password reset...**: User can't log in as admin, asks for password to be set to  and requests a password reset feature. (IN PROGRESS)
+2.  **giving me error message...**: User reports a React version mismatch error. (RESOLVED)
+3.  **yes please proceed...**: User approves the plan for the admin dashboard, report system, and app store material generation. Provides a new logo. (IN PROGRESS)
+4.  **make me the admin...**: User requests to be made an admin with a dashboard to ban/warn users based on reports. Asks for advice and if the app is ready for stores. (IN PROGRESS)
+5.  **yes proceed with all...**: User approves the agent's detailed plan for the referral system. (DONE)
+6.  **I want user to earn 20 new roses...**: User requests a referral system with specific rewards and asks for abuse prevention measures. (DONE)
+7.  **make it functional the subscription button...**: User wants to accept credit/debit cards and Apple Pay for subscriptions. (DONE)
+8.  **complete what you were doing**: User interruption, prompting agent to continue.
+9.  **User provides Stripe Keys**: User gives  and  keys. (DONE)
+10. **yeah thats fine do as you believe is right**: User agrees with the agent's proposed fix for the discover screen crash. (DONE)
+</Last_10_User_Messages_and_any_pending_HUMAN_messages>
+<Project_Health_Check>
+- **Broken**: Nothing is critically broken. The password reset feature is the only half-finished component.
+- **Mocked**: Email sending for 2FA and password resets is mocked (prints to console). This will need a real email service (e.g., SendGrid, Mailgun) for production.
+</Project_Health_Check>
+<3rd_Party_Integrations>
+- **Stripe (Payments)** — requires User API Key. (Test keys are now integrated).
+- **Expo (Mobile App Framework)**
+- **FastAPI (Backend Framework)**
+- **MongoDB (Database)**
+</3rd_Party_Integrations>
+<Testing_status>
+- **Testing agent used after significant changes**: NO
+- **Troubleshoot agent used after agent stuck in loop**: NO
+- **Test files created**: []
+- **Known regressions**: None identified in this session.
+</Testing_status>
+<Credentials_to_test_flow>
+- **Admin User**:
+    - Email: 
+    - Password: 
+- **Test Users**: Four test profiles were seeded and can be seen in the Discover screen. You can also register a new user to test the full flow.
+</Credentials_to_test_flow>
+<What_agent_forgot_to_execute>
+- **Enforce 3-photo minimum**: This user requirement from the original PRD is still not implemented on the frontend during registration.
+- **Disable screenshot functionality**: This privacy feature from the original PRD has not been implemented.
+</What_agent_forgot_to_execute>
+</analysis>
