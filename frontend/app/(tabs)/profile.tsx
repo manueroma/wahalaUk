@@ -6,10 +6,10 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Alert,
   Modal,
   TextInput,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +22,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user, logout, deleteAccount, token } = useAuthStore();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -33,47 +34,23 @@ export default function ProfileScreen() {
     }
   }, [user]);
 
-  const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Logout', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await logout();
-              // Force navigation to login
-              setTimeout(() => {
-                router.replace('/auth/login');
-              }, 100);
-            } catch (error) {
-              console.error('Logout error:', error);
-              // Still try to navigate
-              router.replace('/auth/login');
-            }
-          }
-        },
-      ]
-    );
+  const handleLogout = () => {
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = async () => {
+    try {
+      await logout();
+      setShowLogoutModal(false);
+      router.replace('/auth/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      router.replace('/auth/login');
+    }
   };
 
   const handleDeleteAccount = () => {
-    // First warning
-    Alert.alert(
-      '⚠️ Delete Account',
-      'This will PERMANENTLY delete your account and all your data including:\n\n• Your profile and photos\n• All your matches\n• All your messages\n• Your roses and transactions\n\nThis action CANNOT be undone!',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'I Understand, Continue', 
-          style: 'destructive',
-          onPress: () => setShowDeleteModal(true)
-        },
-      ]
-    );
+    setShowDeleteModal(true);
   };
 
   const confirmDeleteAccount = async () => {
