@@ -185,6 +185,10 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 16,
   },
+  requiredText: {
+    color: '#FF6B6B',
+    fontWeight: '500',
+  },
   photosGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
