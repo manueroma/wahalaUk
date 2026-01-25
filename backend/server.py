@@ -814,7 +814,7 @@ async def subscribe_premium(payment_data: PaymentIntent, current_user: dict = De
     if payment_type not in ["premium_monthly", "premium_yearly"]:
         raise HTTPException(status_code=400, detail="Invalid subscription type")
     
-    # Create payment intent
+    # Create Stripe Checkout Session
     if not STRIPE_SECRET_KEY:
         # Test mode
         duration = 30 if payment_type == "premium_monthly" else 365
@@ -822,6 +822,7 @@ async def subscribe_premium(payment_data: PaymentIntent, current_user: dict = De
             {"_id": current_user["_id"]},
             {
                 "$set": {
+                    "is_premium": True,
                     "premium_status": "premium",
                     "premium_expiry": datetime.utcnow() + timedelta(days=duration)
                 }
@@ -831,21 +832,173 @@ async def subscribe_premium(payment_data: PaymentIntent, current_user: dict = De
     
     try:
         amount = 999 if payment_type == "premium_monthly" else 8999
-        intent = stripe.PaymentIntent.create(
-            amount=amount,
-            currency="gbp",
+        plan_name = "WAHALA UK Premium Monthly" if payment_type == "premium_monthly" else "WAHALA UK Premium Yearly"
+        
+        # Create Checkout Session with Apple Pay and Card support
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],  # Cards include Apple Pay, Google Pay when enabled
+            line_items=[{
+                'price_data': {
+                    'currency': 'gbp',
+                    'product_data': {
+                        'name': plan_name,
+                        'description': 'Unlimited swipes, see who likes you, priority discovery, and more!',
+                    },
+                    'unit_amount': amount,
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=f'https://wahaladating.preview.emergentagent.com/payment-success?session_id={{CHECKOUT_SESSION_ID}}&type={payment_type}',
+            cancel_url='https://wahaladating.preview.emergentagent.com/premium',
             metadata={
-                "type": payment_type,
-                "user_id": str(current_user["_id"])
-            }
+                'type': payment_type,
+                'user_id': str(current_user["_id"])
+            },
+            customer_email=current_user.get("email"),
         )
         
         return {
-            "client_secret": intent.client_secret,
+            "checkout_url": checkout_session.url,
+            "session_id": checkout_session.id,
             "payment_required": True
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Payment error: {str(e)}")
+
+@app.post("/api/payment/create-checkout")
+async def create_checkout_session(
+    payment_type: str = Body(...),
+    match_id: Optional[str] = Body(None),
+    receiver_id: Optional[str] = Body(None),
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a Stripe Checkout Session for any payment type"""
+    
+    if not STRIPE_SECRET_KEY:
+        raise HTTPException(status_code=400, detail="Stripe not configured")
+    
+    user_id = str(current_user["_id"])
+    
+    # Define payment configurations
+    payment_configs = {
+        "premium_monthly": {"amount": 999, "name": "WAHALA UK Premium Monthly", "desc": "1 month of unlimited features"},
+        "premium_yearly": {"amount": 8999, "name": "WAHALA UK Premium Yearly", "desc": "12 months of unlimited features - Best Value!"},
+        "instant_chat": {"amount": 99, "name": "Instant Chat Unlock", "desc": "Skip the 1-hour wait and chat now!"},
+        "rose": {"amount": 10, "name": "Virtual Rose", "desc": "Send a special rose to show your interest"},
+        "donation": {"amount": 500, "name": "Support WAHALA UK", "desc": "Help us improve the app"},
+    }
+    
+    if payment_type not in payment_configs:
+        raise HTTPException(status_code=400, detail="Invalid payment type")
+    
+    config = payment_configs[payment_type]
+    
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'gbp',
+                    'product_data': {
+                        'name': config["name"],
+                        'description': config["desc"],
+                    },
+                    'unit_amount': config["amount"],
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=f'https://wahaladating.preview.emergentagent.com/payment-success?session_id={{CHECKOUT_SESSION_ID}}&type={payment_type}',
+            cancel_url='https://wahaladating.preview.emergentagent.com/',
+            metadata={
+                'type': payment_type,
+                'user_id': user_id,
+                'match_id': match_id or '',
+                'receiver_id': receiver_id or ''
+            },
+            customer_email=current_user.get("email"),
+        )
+        
+        return {
+            "checkout_url": checkout_session.url,
+            "session_id": checkout_session.id
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Payment error: {str(e)}")
+
+@app.post("/api/payment/verify-session")
+async def verify_payment_session(
+    session_id: str = Body(..., embed=True),
+    current_user: dict = Depends(get_current_user)
+):
+    """Verify a completed Stripe Checkout Session and apply benefits"""
+    
+    if not STRIPE_SECRET_KEY:
+        raise HTTPException(status_code=400, detail="Stripe not configured")
+    
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+        
+        if session.payment_status != "paid":
+            raise HTTPException(status_code=400, detail="Payment not completed")
+        
+        user_id = str(current_user["_id"])
+        payment_type = session.metadata.get("type")
+        
+        # Apply benefits based on payment type
+        if payment_type in ["premium_monthly", "premium_yearly"]:
+            duration = 30 if payment_type == "premium_monthly" else 365
+            users_collection.update_one(
+                {"_id": current_user["_id"]},
+                {
+                    "$set": {
+                        "is_premium": True,
+                        "premium_status": "premium",
+                        "premium_expiry": datetime.utcnow() + timedelta(days=duration)
+                    }
+                }
+            )
+            return {"success": True, "message": "Premium activated!", "type": payment_type}
+        
+        elif payment_type == "instant_chat":
+            match_id = session.metadata.get("match_id")
+            if match_id:
+                matches_collection.update_one(
+                    {"_id": ObjectId(match_id)},
+                    {"$set": {"chat_unlocked": True, "unlock_method": "payment"}}
+                )
+            return {"success": True, "message": "Chat unlocked!", "type": payment_type}
+        
+        elif payment_type == "rose":
+            receiver_id = session.metadata.get("receiver_id")
+            if receiver_id:
+                roses_collection.insert_one({
+                    "sender_id": user_id,
+                    "receiver_id": receiver_id,
+                    "created_at": datetime.utcnow()
+                })
+                users_collection.update_one(
+                    {"_id": ObjectId(receiver_id)},
+                    {"$inc": {"roses_received": 1}}
+                )
+            return {"success": True, "message": "Rose sent!", "type": payment_type}
+        
+        elif payment_type == "donation":
+            donations_collection.insert_one({
+                "user_id": user_id,
+                "amount": session.amount_total,
+                "session_id": session_id,
+                "created_at": datetime.utcnow()
+            })
+            return {"success": True, "message": "Thank you for your donation!", "type": payment_type}
+        
+        return {"success": True, "message": "Payment processed", "type": payment_type}
+        
+    except stripe.error.InvalidRequestError:
+        raise HTTPException(status_code=404, detail="Session not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Verification error: {str(e)}")
 
 @app.get("/api/premium/status")
 async def get_premium_status(current_user: dict = Depends(get_current_user)):
