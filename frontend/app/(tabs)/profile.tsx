@@ -315,6 +315,43 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Logout Confirmation Modal */}
+      <Modal
+        visible={showLogoutModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowLogoutModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Ionicons name="log-out-outline" size={48} color="#FF6B6B" />
+              <Text style={styles.modalTitle}>Logout</Text>
+            </View>
+            
+            <Text style={styles.modalText}>
+              Are you sure you want to logout from WAHALA UK?
+            </Text>
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => setShowLogoutModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.logoutConfirmButton}
+                onPress={confirmLogout}
+              >
+                <Text style={styles.confirmDeleteText}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
