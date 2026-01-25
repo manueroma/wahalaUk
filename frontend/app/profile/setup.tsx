@@ -81,7 +81,15 @@ export default function ProfileSetupScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Photos ({photos.length}/10)</Text>
-        <Text style={styles.sectionSubtitle}>Upload 3-10 photos</Text>
+        <Text style={[
+          styles.sectionSubtitle,
+          photos.length < 3 && styles.requiredText
+        ]}>
+          {photos.length < 3 
+            ? `⚠️ Minimum 3 photos required (${3 - photos.length} more needed)`
+            : '✅ Looking great! Add more if you like'
+          }
+        </Text>
 
         <View style={styles.photosGrid}>
           {photos.map((photo, index) => (
