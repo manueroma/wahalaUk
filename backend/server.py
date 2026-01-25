@@ -54,6 +54,11 @@ otp_collection = db["otp_codes"]  # For 2FA
 blocked_users_collection = db["blocked_users"]
 user_settings_collection = db["user_settings"]
 referrals_collection = db["referrals"]  # For referral tracking
+reports_collection = db["reports"]  # For user reports
+warnings_collection = db["warnings"]  # For user warnings
+
+# Admin email
+ADMIN_EMAIL = "wahalauk@gmail.com"
 
 # Create referral indexes
 users_collection.create_index("referral_code", unique=True, sparse=True)
