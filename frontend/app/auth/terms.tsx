@@ -126,12 +126,23 @@ export default function TermsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>7. Account Termination</Text>
+          <Text style={styles.sectionTitle}>7. Account Suspension & Termination</Text>
           <Text style={styles.sectionText}>
-            We reserve the right to:{'\n\n'}
-            • Suspend or terminate accounts that violate these terms{'\n'}
-            • Remove content that violates our community guidelines{'\n'}
-            • Ban users who engage in prohibited conduct{'\n\n'}
+            <Text style={styles.bold}>Our Moderation Policy:</Text>{'\n\n'}
+            WAHALA UK operates a 3-strike warning system:{'\n'}
+            • 1st violation: Warning{'\n'}
+            • 2nd violation: 24-hour suspension{'\n'}
+            • 3rd violation: Permanent ban{'\n\n'}
+            <Text style={styles.bold}>Severe violations may result in immediate permanent ban, including:</Text>{'\n'}
+            • Harassment or threatening behavior{'\n'}
+            • Posting illegal content{'\n'}
+            • Scamming or fraud{'\n'}
+            • Creating fake profiles{'\n\n'}
+            <Text style={styles.bold}>Important:</Text>{'\n'}
+            • WAHALA UK reserves the right to ban any account at our discretion{'\n'}
+            • We are NOT obligated to provide specific reasons for account termination{'\n'}
+            • NO REFUNDS will be issued for banned accounts, including premium subscriptions{'\n'}
+            • Banned users may not create new accounts{'\n\n'}
             You may delete your account at any time through the app settings.
           </Text>
         </View>
