@@ -1977,6 +1977,407 @@ async def validate_referral_code(code: str):
         "message": f"You'll get 5 free roses when you sign up using {user.get('name', 'this user')}'s code!"
     }
 
+# ============= REPORT ROUTES =============
+
+@app.post("/api/report/user")
+async def report_user(report: ReportUser, current_user: dict = Depends(get_current_user)):
+    """Report a user for violation"""
+    reporter_id = str(current_user["_id"])
+    
+    # Check if reported user exists
+    reported_user = users_collection.find_one({"_id": ObjectId(report.reported_user_id)})
+    if not reported_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check if already reported by this user (prevent spam)
+    existing_report = reports_collection.find_one({
+        "reporter_id": reporter_id,
+        "reported_user_id": report.reported_user_id,
+        "status": "pending"
+    })
+    if existing_report:
+        return {"message": "You have already reported this user. We are reviewing it."}
+    
+    # Create report
+    report_doc = {
+        "reporter_id": reporter_id,
+        "reporter_name": current_user.get("name"),
+        "reported_user_id": report.reported_user_id,
+        "reported_user_name": reported_user.get("name"),
+        "reported_user_email": reported_user.get("email"),
+        "reason": report.reason,
+        "description": report.description,
+        "status": "pending",  # pending, reviewed, dismissed, actioned
+        "created_at": datetime.utcnow(),
+        "reviewed_at": None,
+        "reviewed_by": None,
+        "action_taken": None
+    }
+    
+    reports_collection.insert_one(report_doc)
+    
+    return {"message": "Report submitted successfully. Our team will review it within 24 hours."}
+
+@app.get("/api/user/warnings")
+async def get_my_warnings(current_user: dict = Depends(get_current_user)):
+    """Get current user's warnings"""
+    user_id = str(current_user["_id"])
+    
+    warnings = list(warnings_collection.find({"user_id": user_id}).sort("created_at", DESCENDING))
+    
+    return {
+        "warning_count": len([w for w in warnings if w["status"] == "active"]),
+        "warnings": [{
+            "reason": w.get("reason"),
+            "message": w.get("message"),
+            "created_at": w.get("created_at").isoformat() if w.get("created_at") else None,
+            "status": w.get("status")
+        } for w in warnings]
+    }
+
+# ============= ADMIN ROUTES =============
+
+@app.get("/api/admin/check")
+async def check_admin(current_user: dict = Depends(get_current_user)):
+    """Check if current user is admin"""
+    return {"is_admin": is_admin(current_user)}
+
+@app.get("/api/admin/dashboard")
+async def admin_dashboard(current_user: dict = Depends(get_current_user)):
+    """Get admin dashboard stats"""
+    if not is_admin(current_user):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Get stats
+    total_users = users_collection.count_documents({})
+    active_users_24h = users_collection.count_documents({
+        "last_active": {"$gte": datetime.utcnow() - timedelta(hours=24)}
+    })
+    premium_users = users_collection.count_documents({"is_premium": True})
+    banned_users = users_collection.count_documents({"is_banned": True})
+    
+    pending_reports = reports_collection.count_documents({"status": "pending"})
+    total_reports = reports_collection.count_documents({})
+    
+    total_matches = matches_collection.count_documents({})
+    
+    # Recent signups
+    recent_users = list(users_collection.find().sort("created_at", DESCENDING).limit(10))
+    
+    return {
+        "stats": {
+            "total_users": total_users,
+            "active_users_24h": active_users_24h,
+            "premium_users": premium_users,
+            "banned_users": banned_users,
+            "pending_reports": pending_reports,
+            "total_reports": total_reports,
+            "total_matches": total_matches
+        },
+        "recent_users": [{
+            "_id": str(u["_id"]),
+            "name": u.get("name"),
+            "email": u.get("email"),
+            "created_at": u.get("created_at").isoformat() if u.get("created_at") else None,
+            "is_premium": u.get("is_premium", False),
+            "is_banned": u.get("is_banned", False)
+        } for u in recent_users]
+    }
+
+@app.get("/api/admin/users")
+async def admin_get_users(
+    skip: int = 0,
+    limit: int = 50,
+    search: Optional[str] = None,
+    filter_type: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all users for admin"""
+    if not is_admin(current_user):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    query = {}
+    
+    if search:
+        query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"email": {"$regex": search, "$options": "i"}}
+        ]
+    
+    if filter_type == "premium":
+        query["is_premium"] = True
+    elif filter_type == "banned":
+        query["is_banned"] = True
+    elif filter_type == "warned":
+        query["warning_count"] = {"$gt": 0}
+    
+    users = list(users_collection.find(query).sort("created_at", DESCENDING).skip(skip).limit(limit))
+    total = users_collection.count_documents(query)
+    
+    return {
+        "users": [{
+            "_id": str(u["_id"]),
+            "name": u.get("name"),
+            "email": u.get("email"),
+            "age": u.get("age"),
+            "gender": u.get("gender"),
+            "location_city": u.get("location_city"),
+            "location_country": u.get("location_country"),
+            "photos": u.get("photos", [])[:1],  # Just first photo
+            "is_premium": u.get("is_premium", False),
+            "is_banned": u.get("is_banned", False),
+            "warning_count": u.get("warning_count", 0),
+            "created_at": u.get("created_at").isoformat() if u.get("created_at") else None,
+            "last_active": u.get("last_active").isoformat() if u.get("last_active") else None
+        } for u in users],
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
+
+@app.get("/api/admin/reports")
+async def admin_get_reports(
+    status: Optional[str] = "pending",
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all reports for admin review"""
+    if not is_admin(current_user):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    query = {}
+    if status:
+        query["status"] = status
+    
+    reports = list(reports_collection.find(query).sort("created_at", DESCENDING))
+    
+    return {
+        "reports": [{
+            "_id": str(r["_id"]),
+            "reporter_name": r.get("reporter_name"),
+            "reported_user_id": r.get("reported_user_id"),
+            "reported_user_name": r.get("reported_user_name"),
+            "reported_user_email": r.get("reported_user_email"),
+            "reason": r.get("reason"),
+            "description": r.get("description"),
+            "status": r.get("status"),
+            "created_at": r.get("created_at").isoformat() if r.get("created_at") else None,
+            "action_taken": r.get("action_taken")
+        } for r in reports],
+        "total": len(reports)
+    }
+
+@app.get("/api/admin/user/{user_id}")
+async def admin_get_user_detail(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Get detailed user info for admin"""
+    if not is_admin(current_user):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    user = users_collection.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get warnings
+    warnings = list(warnings_collection.find({"user_id": user_id}).sort("created_at", DESCENDING))
+    
+    # Get reports against this user
+    reports_against = list(reports_collection.find({"reported_user_id": user_id}).sort("created_at", DESCENDING))
+    
+    # Get reports by this user
+    reports_by = list(reports_collection.find({"reporter_id": user_id}).sort("created_at", DESCENDING))
+    
+    user = serialize_doc(user)
+    user.pop("password", None)
+    
+    return {
+        "user": user,
+        "warnings": [{
+            "_id": str(w["_id"]),
+            "reason": w.get("reason"),
+            "message": w.get("message"),
+            "created_at": w.get("created_at").isoformat() if w.get("created_at") else None,
+            "status": w.get("status"),
+            "issued_by": w.get("issued_by")
+        } for w in warnings],
+        "reports_against": [{
+            "_id": str(r["_id"]),
+            "reporter_name": r.get("reporter_name"),
+            "reason": r.get("reason"),
+            "description": r.get("description"),
+            "status": r.get("status"),
+            "created_at": r.get("created_at").isoformat() if r.get("created_at") else None
+        } for r in reports_against],
+        "reports_by": [{
+            "_id": str(r["_id"]),
+            "reported_user_name": r.get("reported_user_name"),
+            "reason": r.get("reason"),
+            "status": r.get("status"),
+            "created_at": r.get("created_at").isoformat() if r.get("created_at") else None
+        } for r in reports_by]
+    }
+
+@app.post("/api/admin/action")
+async def admin_take_action(action: AdminAction, current_user: dict = Depends(get_current_user)):
+    """Admin action on a user (warn, suspend, ban, unban)"""
+    if not is_admin(current_user):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    target_user = users_collection.find_one({"_id": ObjectId(action.user_id)})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    now = datetime.utcnow()
+    
+    if action.action == "warn":
+        # Issue warning
+        warning_count = get_user_warning_count(action.user_id) + 1
+        
+        warning_doc = {
+            "user_id": action.user_id,
+            "reason": action.reason,
+            "message": f"This is warning #{warning_count}. Please review our community guidelines.",
+            "internal_notes": action.internal_notes,
+            "status": "active",
+            "created_at": now,
+            "issued_by": str(current_user["_id"])
+        }
+        warnings_collection.insert_one(warning_doc)
+        
+        # Update user's warning count
+        users_collection.update_one(
+            {"_id": ObjectId(action.user_id)},
+            {"$set": {"warning_count": warning_count}}
+        )
+        
+        # Auto-suspend after 2nd warning
+        if warning_count == 2:
+            users_collection.update_one(
+                {"_id": ObjectId(action.user_id)},
+                {"$set": {
+                    "is_suspended": True,
+                    "suspended_until": now + timedelta(hours=24),
+                    "suspension_reason": "Multiple community guideline violations"
+                }}
+            )
+            return {"message": f"Warning #{warning_count} issued. User auto-suspended for 24 hours."}
+        
+        # Auto-ban after 3rd warning
+        elif warning_count >= 3:
+            users_collection.update_one(
+                {"_id": ObjectId(action.user_id)},
+                {"$set": {
+                    "is_banned": True,
+                    "banned_at": now,
+                    "ban_reason": "Multiple community guideline violations (3 strikes)"
+                }}
+            )
+            return {"message": f"Warning #{warning_count} issued. User permanently banned (3 strikes)."}
+        
+        return {"message": f"Warning #{warning_count} issued to user."}
+    
+    elif action.action == "suspend_24h":
+        users_collection.update_one(
+            {"_id": ObjectId(action.user_id)},
+            {"$set": {
+                "is_suspended": True,
+                "suspended_until": now + timedelta(hours=24),
+                "suspension_reason": action.reason
+            }}
+        )
+        return {"message": "User suspended for 24 hours."}
+    
+    elif action.action == "suspend_7d":
+        users_collection.update_one(
+            {"_id": ObjectId(action.user_id)},
+            {"$set": {
+                "is_suspended": True,
+                "suspended_until": now + timedelta(days=7),
+                "suspension_reason": action.reason
+            }}
+        )
+        return {"message": "User suspended for 7 days."}
+    
+    elif action.action == "ban":
+        users_collection.update_one(
+            {"_id": ObjectId(action.user_id)},
+            {"$set": {
+                "is_banned": True,
+                "banned_at": now,
+                "ban_reason": action.reason
+            }}
+        )
+        return {"message": "User permanently banned."}
+    
+    elif action.action == "unban":
+        users_collection.update_one(
+            {"_id": ObjectId(action.user_id)},
+            {"$set": {
+                "is_banned": False,
+                "is_suspended": False,
+                "banned_at": None,
+                "ban_reason": None,
+                "suspended_until": None,
+                "suspension_reason": None
+            }}
+        )
+        # Clear warnings
+        warnings_collection.update_many(
+            {"user_id": action.user_id},
+            {"$set": {"status": "cleared"}}
+        )
+        users_collection.update_one(
+            {"_id": ObjectId(action.user_id)},
+            {"$set": {"warning_count": 0}}
+        )
+        return {"message": "User unbanned and warnings cleared."}
+    
+    raise HTTPException(status_code=400, detail="Invalid action")
+
+@app.post("/api/admin/review-report")
+async def admin_review_report(review: AdminReviewReport, current_user: dict = Depends(get_current_user)):
+    """Admin review and action a report"""
+    if not is_admin(current_user):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    report = reports_collection.find_one({"_id": ObjectId(review.report_id)})
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    
+    now = datetime.utcnow()
+    
+    # Update report status
+    reports_collection.update_one(
+        {"_id": ObjectId(review.report_id)},
+        {"$set": {
+            "status": "reviewed",
+            "reviewed_at": now,
+            "reviewed_by": str(current_user["_id"]),
+            "action_taken": review.action,
+            "review_notes": review.notes
+        }}
+    )
+    
+    # Take action on reported user if needed
+    if review.action in ["warn", "suspend", "ban"]:
+        reported_user_id = report["reported_user_id"]
+        
+        action_map = {
+            "warn": "warn",
+            "suspend": "suspend_24h",
+            "ban": "ban"
+        }
+        
+        admin_action = AdminAction(
+            user_id=reported_user_id,
+            action=action_map[review.action],
+            reason=f"Reported for: {report['reason']}",
+            internal_notes=review.notes
+        )
+        
+        # Recursively call admin action
+        await admin_take_action(admin_action, current_user)
+    
+    return {"message": f"Report reviewed. Action: {review.action}"}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
