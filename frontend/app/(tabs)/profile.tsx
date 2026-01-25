@@ -55,7 +55,6 @@ export default function ProfileScreen() {
 
   const confirmDeleteAccount = async () => {
     if (deleteConfirmText !== 'DELETE') {
-      Alert.alert('Error', 'Please type DELETE to confirm');
       return;
     }
 
@@ -66,22 +65,7 @@ export default function ProfileScreen() {
     if (result.success) {
       setShowDeleteModal(false);
       setDeleteConfirmText('');
-      Alert.alert(
-        'Account Deleted',
-        'Your account has been permanently deleted. We\'re sorry to see you go!',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              setTimeout(() => {
-                router.replace('/auth/login');
-              }, 100);
-            }
-          }
-        ]
-      );
-    } else {
-      Alert.alert('Error', result.error || 'Failed to delete account. Please try again.');
+      router.replace('/auth/login');
     }
   };
 
