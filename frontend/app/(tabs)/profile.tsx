@@ -94,62 +94,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleDeactivateAccount = () => {
-    Alert.alert(
-      'Deactivate Account',
-      'Would you like to take a break from WAHALA UK? Your profile will be hidden and you won\'t appear in searches.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: '1 Week',
-          onPress: () => deactivateAccount(7)
-        },
-        {
-          text: '1 Month',
-          onPress: () => deactivateAccount(30)
-        },
-        {
-          text: 'Until I Reactivate',
-          onPress: () => deactivateAccount(0)
-        },
-      ]
-    );
-  };
-
-  const deactivateAccount = async (days: number) => {
-    try {
-      const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
-      const response = await fetch(`${API_URL}/api/account/deactivate`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ duration_days: days }),
-      });
-
-      if (response.ok) {
-        const message = days > 0 
-          ? `Your account has been deactivated for ${days} days. You can reactivate anytime by logging back in.`
-          : 'Your account has been deactivated. Log back in anytime to reactivate.';
-        
-        Alert.alert('Account Deactivated', message, [
-          {
-            text: 'OK',
-            onPress: async () => {
-              await logout();
-              router.replace('/auth/login');
-            }
-          }
-        ]);
-      } else {
-        Alert.alert('Error', 'Failed to deactivate account');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Network error. Please try again.');
-    }
-  };
-
   const handlePremium = () => {
     router.push('/premium');
   };
