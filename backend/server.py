@@ -14,6 +14,9 @@ import bcrypt
 import jwt
 import stripe
 import base64
+import random
+import string
+import hashlib
 
 load_dotenv()
 
