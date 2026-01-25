@@ -50,6 +50,9 @@ roses_collection.create_index("receiver_id")
 donations_collection = db["donations"]
 affiliates_collection = db["affiliates"]
 affiliate_subscriptions_collection = db["affiliate_subscriptions"]
+otp_collection = db["otp_codes"]  # For 2FA
+blocked_users_collection = db["blocked_users"]
+user_settings_collection = db["user_settings"]
 
 app = FastAPI(title="WAHALA UK API")
 security = HTTPBearer()
