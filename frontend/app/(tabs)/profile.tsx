@@ -88,13 +88,18 @@ export default function ProfileScreen() {
 
     if (result.success) {
       setShowDeleteModal(false);
+      setDeleteConfirmText('');
       Alert.alert(
         'Account Deleted',
         'Your account has been permanently deleted. We\'re sorry to see you go!',
         [
           {
             text: 'OK',
-            onPress: () => router.replace('/auth/login')
+            onPress: () => {
+              setTimeout(() => {
+                router.replace('/auth/login');
+              }, 100);
+            }
           }
         ]
       );
