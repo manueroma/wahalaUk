@@ -649,6 +649,18 @@ const styles = StyleSheet.create({
   logoutText: {
     color: '#FF6B6B',
   },
+  adminMenuItem: {
+    backgroundColor: '#F3E5F5',
+    marginHorizontal: -20,
+    paddingHorizontal: 20,
+    marginBottom: 8,
+    borderBottomWidth: 0,
+    borderRadius: 12,
+  },
+  adminMenuText: {
+    color: '#9C27B0',
+    fontWeight: '600',
+  },
   footer: {
     alignItems: 'center',
     padding: 32,
