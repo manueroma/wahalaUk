@@ -249,37 +249,55 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={24} color="#DDD" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={() => Alert.alert('Help Center', 'Need help?\n\n• Email us at wahalauk@gmail.com\n• Check our FAQs below\n• Follow us on Instagram @wahalauk for tips')}
+        >
           <Ionicons name="help-circle-outline" size={24} color="#666" />
           <Text style={styles.menuText}>Help Center</Text>
           <Ionicons name="chevron-forward" size={24} color="#DDD" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={() => Alert.alert('Safety Tips', '🛡️ Stay Safe on WAHALA UK\n\n1. Never share personal info like address or bank details\n2. Video chat before meeting in person\n3. Meet in public places for first dates\n4. Tell a friend where you\'re going\n5. Trust your instincts\n6. Report suspicious behavior')}
+        >
           <Ionicons name="shield-checkmark-outline" size={24} color="#666" />
           <Text style={styles.menuText}>Safety Tips</Text>
           <Ionicons name="chevron-forward" size={24} color="#DDD" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={() => Alert.alert('FAQs', '❓ Frequently Asked Questions\n\nQ: How many free swipes do I get?\nA: 20 swipes per day for free users.\n\nQ: What is a Rose?\nA: Roses are virtual gifts (£0.10 each) that show special interest.\n\nQ: How does matching work?\nA: Swipe right (WAHALA) on someone you like. If they swipe right too, it\'s a match!\n\nQ: How do I get Premium?\nA: Go to Settings > Premium Subscription.')}
+        >
           <Ionicons name="chatbubble-outline" size={24} color="#666" />
           <Text style={styles.menuText}>FAQs</Text>
           <Ionicons name="chevron-forward" size={24} color="#DDD" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={() => Alert.alert('Terms of Service', 'By using WAHALA UK, you agree to:\n\n• Be at least 18 years old\n• Provide accurate information\n• Respect other users\n• Not share inappropriate content\n• Annual subscriptions are non-refundable\n• WAHALA UK is not responsible for events outside the app\n\nWe welcome all ethnicities while supporting the black community\'s mission to connect.')}
+        >
           <Ionicons name="document-text-outline" size={24} color="#666" />
           <Text style={styles.menuText}>Terms of Service</Text>
           <Ionicons name="chevron-forward" size={24} color="#DDD" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={() => Alert.alert('Privacy Policy', 'Your Privacy Matters\n\nWe collect:\n• Profile information you provide\n• Usage data to improve the app\n• Location (with permission)\n\nWe never:\n• Sell your personal data\n• Share your information without consent\n• Store payment details (handled by Stripe)\n\nContact: wahalauk@gmail.com')}
+        >
           <Ionicons name="lock-closed-outline" size={24} color="#666" />
           <Text style={styles.menuText}>Privacy Policy</Text>
           <Ionicons name="chevron-forward" size={24} color="#DDD" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={() => Alert.alert('About WAHALA UK', '❤️ WAHALA UK\n\n"Find Your Love"\n\nA dating app built for black professionals in the UK, US, and Italy who are ready for serious relationships.\n\nSince COVID changed how we meet, WAHALA UK brings meaningful connections back.\n\nVersion 1.0.0\n\n© 2025 WAHALA UK')}
+        >
           <Ionicons name="information-circle-outline" size={24} color="#666" />
           <Text style={styles.menuText}>About WAHALA UK</Text>
           <Ionicons name="chevron-forward" size={24} color="#DDD" />
