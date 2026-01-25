@@ -661,11 +661,24 @@ async def request_password_reset(data: PasswordResetRequest):
         upsert=True
     )
     
-    # In production, send email/SMS here
-    # For now, return the code (REMOVE IN PRODUCTION)
+    # Send email with reset code
+    if data.email:
+        email_sent = send_password_reset_email(data.email, reset_code)
+        if email_sent:
+            return {
+                "message": "Reset code sent! Check your email.",
+                "expires_in_minutes": 15
+            }
+        else:
+            # Fallback: return code if email fails (for debugging)
+            return {
+                "message": "Email service temporarily unavailable. Here's your code:",
+                "reset_code_for_testing": reset_code,
+                "expires_in_minutes": 15
+            }
+    
     return {
         "message": "Reset code sent! Check your email/phone.",
-        "reset_code_for_testing": reset_code,  # REMOVE IN PRODUCTION
         "expires_in_minutes": 15
     }
 
