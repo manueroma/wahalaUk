@@ -179,4 +179,14 @@ const styles = StyleSheet.create({
     color: '#FF6B6B',
     fontWeight: 'bold',
   },
+  forgotPassword: {
+    alignSelf: 'flex-end',
+    marginBottom: 8,
+    marginTop: -8,
+  },
+  forgotPasswordText: {
+    color: '#FF6B6B',
+    fontSize: 14,
+    fontWeight: '500',
+  },
 });
