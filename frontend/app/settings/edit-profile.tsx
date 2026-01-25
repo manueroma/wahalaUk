@@ -14,9 +14,19 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Picker } from '@react-native-picker/picker';
 import { useAuthStore } from '../../store/authStore';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+
+// Generate height options from 140cm to 220cm
+const heightOptions = Array.from({ length: 81 }, (_, i) => 140 + i);
+
+// Extract numeric height from string like "170 cm" or "170cm"
+const extractHeight = (heightStr: string): string => {
+  const match = heightStr?.match(/(\d+)/);
+  return match ? match[1] : '170';
+};
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -25,7 +35,7 @@ export default function EditProfileScreen() {
   const [profile, setProfile] = useState({
     name: user?.name || '',
     bio: user?.bio || '',
-    height: user?.height || '',
+    height: extractHeight(user?.height || '170'),
     job: user?.job || '',
     education: user?.education || '',
     instagram: user?.instagram || '',
