@@ -334,6 +334,12 @@ const styles = StyleSheet.create({
   form: {
     width: '100%',
   },
+  requiredNote: {
+    fontSize: 12,
+    color: '#FF6B6B',
+    marginBottom: 12,
+    marginLeft: 4,
+  },
   input: {
     backgroundColor: '#F5F5F5',
     borderRadius: 12,
