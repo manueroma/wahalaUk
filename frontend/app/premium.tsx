@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,9 +21,9 @@ export default function PremiumScreen() {
   const {
     isReady,
     connected,
-    subscriptions,
     purchasing,
     error,
+    isWebPreview,
     purchaseProduct,
     restorePurchases,
     clearError,
@@ -33,11 +34,20 @@ export default function PremiumScreen() {
   // Show error alerts
   useEffect(() => {
     if (error) {
-      Alert.alert('Error', error, [{ text: 'OK', onPress: clearError }]);
+      Alert.alert('Notice', error, [{ text: 'OK', onPress: clearError }]);
     }
   }, [error]);
 
   const handleSubscribe = async (productId: string) => {
+    if (isWebPreview) {
+      Alert.alert(
+        '📱 Native App Required',
+        'In-App Purchases are only available when you download the app from the App Store or Google Play.\n\nThis is a preview version.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     const success = await purchaseProduct(productId);
     
     if (success) {
@@ -51,12 +61,20 @@ export default function PremiumScreen() {
   };
 
   const handleRestorePurchases = async () => {
+    if (isWebPreview) {
+      Alert.alert(
+        '📱 Native App Required',
+        'Restore Purchases is only available in the native app.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     setRestoring(true);
     try {
       const purchases = await restorePurchases();
       
       if (purchases && purchases.length > 0) {
-        // Check for active subscriptions
         const hasActiveSubscription = purchases.some(
           (p: any) => p.productId?.includes('premium')
         );
@@ -89,11 +107,11 @@ export default function PremiumScreen() {
   ];
 
   // Loading state
-  if (!isReady || !connected) {
+  if (!isReady) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#FF6B6B" />
-        <Text style={styles.loadingText}>Connecting to store...</Text>
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
@@ -150,21 +168,28 @@ export default function PremiumScreen() {
         </Text>
       </View>
 
+      {/* Web Preview Notice */}
+      {isWebPreview && (
+        <View style={styles.webNotice}>
+          <Ionicons name="information-circle" size={24} color="#FF6B6B" />
+          <Text style={styles.webNoticeText}>
+            You're viewing the web preview. Download the app from the App Store or Google Play to subscribe.
+          </Text>
+        </View>
+      )}
+
       {/* Payment Methods Badge */}
       <View style={styles.paymentMethodsSection}>
         <Text style={styles.paymentMethodsTitle}>Secure In-App Purchase</Text>
         <View style={styles.paymentIcons}>
-          {Platform.OS === 'ios' ? (
-            <View style={styles.paymentBadge}>
-              <Ionicons name="logo-apple" size={20} color="#666" />
-              <Text style={styles.paymentText}>App Store</Text>
-            </View>
-          ) : (
-            <View style={styles.paymentBadge}>
-              <Ionicons name="logo-google-playstore" size={20} color="#666" />
-              <Text style={styles.paymentText}>Google Play</Text>
-            </View>
-          )}
+          <View style={styles.paymentBadge}>
+            <Ionicons name="logo-apple" size={20} color="#666" />
+            <Text style={styles.paymentText}>App Store</Text>
+          </View>
+          <View style={styles.paymentBadge}>
+            <Ionicons name="logo-google-playstore" size={20} color="#666" />
+            <Text style={styles.paymentText}>Google Play</Text>
+          </View>
         </View>
       </View>
 
@@ -251,15 +276,13 @@ export default function PremiumScreen() {
       <View style={styles.footer}>
         <View style={styles.securePayment}>
           <Ionicons name="lock-closed" size={16} color="#4CAF50" />
-          <Text style={styles.secureText}>
-            Secured by {Platform.OS === 'ios' ? 'Apple' : 'Google Play'}
-          </Text>
+          <Text style={styles.secureText}>Secured by Apple & Google</Text>
         </View>
         <Text style={styles.footerText}>
-          Subscriptions auto-renew. Cancel anytime in {Platform.OS === 'ios' ? 'App Store' : 'Google Play'} settings.
+          Subscriptions auto-renew. Cancel anytime in your device settings.
         </Text>
         <Text style={styles.footerText}>
-          Payment will be charged to your {Platform.OS === 'ios' ? 'Apple ID' : 'Google'} account.
+          Payment will be charged to your App Store or Google Play account.
         </Text>
       </View>
     </ScrollView>
@@ -318,6 +341,20 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 8,
     textAlign: 'center',
+  },
+  webNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF5F5',
+    margin: 16,
+    padding: 16,
+    borderRadius: 12,
+    gap: 12,
+  },
+  webNoticeText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#666',
   },
   paymentMethodsSection: {
     backgroundColor: '#FFFFFF',
@@ -476,7 +513,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 4,
   },
-  // Premium active styles
   premiumActiveSection: {
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
