@@ -164,6 +164,15 @@ export default function DiscoverScreen() {
               <Ionicons name="location" size={16} color="#FFFFFF" />
               <Text style={styles.location}>{currentUser.location_city}</Text>
             </View>
+            {currentUser.instagram && (
+              <TouchableOpacity 
+                style={styles.instagramContainer}
+                onPress={() => Linking.openURL(`https://instagram.com/${currentUser.instagram.replace('@', '')}`)}
+              >
+                <Ionicons name="logo-instagram" size={16} color="#E1306C" />
+                <Text style={styles.instagramText}>@{currentUser.instagram.replace('@', '')}</Text>
+              </TouchableOpacity>
+            )}
             {currentUser.roses_received > 0 && (
               <View style={styles.rosesContainer}>
                 <Ionicons name="rose" size={16} color="#FFD700" />
