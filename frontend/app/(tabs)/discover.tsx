@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
@@ -23,6 +24,7 @@ interface User {
   photos: string[];
   interests: string[];
   roses_received: number;
+  instagram?: string;
 }
 
 export default function DiscoverScreen() {
