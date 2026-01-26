@@ -227,7 +227,7 @@ export default function RegisterScreen() {
           />
 
           <View style={styles.pickerContainer}>
-            <Text style={styles.label}>Looking For</Text>
+            <Text style={styles.label}>Looking For *</Text>
             <View style={styles.picker}>
               <Picker
                 selectedValue={formData.looking_for}
@@ -242,7 +242,7 @@ export default function RegisterScreen() {
 
           <TextInput
             style={styles.input}
-            placeholder="Password"
+            placeholder="Password *"
             placeholderTextColor="#999"
             value={formData.password}
             onChangeText={(text) => setFormData({ ...formData, password: text })}
@@ -251,7 +251,7 @@ export default function RegisterScreen() {
 
           <TextInput
             style={styles.input}
-            placeholder="Confirm Password"
+            placeholder="Confirm Password *"
             placeholderTextColor="#999"
             value={formData.confirmPassword}
             onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
