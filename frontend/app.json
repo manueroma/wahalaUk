@@ -68,7 +68,8 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Show you potential matches nearby"
         }
-      ]
+      ],
+      "expo-iap"
     ],
     "experiments": {
       "typedRoutes": true
