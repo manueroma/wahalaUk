@@ -7,91 +7,73 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Linking,
+  Platform,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import * as WebBrowser from 'expo-web-browser';
 import { useAuthStore } from '../store/authStore';
-import api from '../services/api';
-
-const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+import { useInAppPurchases, PRODUCT_IDS } from '../hooks/useInAppPurchases';
 
 export default function PremiumScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams();
-  const { user, updateUser, token } = useAuthStore();
-  const [loading, setLoading] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-  const [verifying, setVerifying] = useState(false);
+  const { user, updateUser } = useAuthStore();
+  const {
+    isReady,
+    connected,
+    subscriptions,
+    purchasing,
+    error,
+    purchaseProduct,
+    restorePurchases,
+    clearError,
+  } = useInAppPurchases();
 
-  // Check for returning from payment
+  const [restoring, setRestoring] = useState(false);
+
+  // Show error alerts
   useEffect(() => {
-    if (params.session_id && params.type) {
-      verifyPayment(params.session_id as string, params.type as string);
+    if (error) {
+      Alert.alert('Error', error, [{ text: 'OK', onPress: clearError }]);
     }
-  }, [params]);
+  }, [error]);
 
-  const verifyPayment = async (sessionId: string, paymentType: string) => {
-    setVerifying(true);
-    try {
-      const response = await api.post('/api/payment/verify-session', {
-        session_id: sessionId,
-      });
-
-      if (response.data.success) {
-        updateUser({ is_premium: true });
-        Alert.alert(
-          '🎉 Welcome to Premium!',
-          'Your subscription is now active. Enjoy unlimited swipes and all premium features!',
-          [{ text: 'Awesome!', onPress: () => router.replace('/(tabs)/discover') }]
-        );
-      }
-    } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.detail || 'Failed to verify payment');
-    } finally {
-      setVerifying(false);
+  const handleSubscribe = async (productId: string) => {
+    const success = await purchaseProduct(productId);
+    
+    if (success) {
+      updateUser({ is_premium: true });
+      Alert.alert(
+        '🎉 Welcome to Premium!',
+        'Your subscription is now active. Enjoy unlimited swipes and all premium features!',
+        [{ text: 'Awesome!', onPress: () => router.replace('/(tabs)/discover') }]
+      );
     }
   };
 
-  const handleSubscribe = async (type: 'premium_monthly' | 'premium_yearly') => {
-    setLoading(true);
-    setSelectedPlan(type);
-    
+  const handleRestorePurchases = async () => {
+    setRestoring(true);
     try {
-      const response = await api.post('/api/premium/subscribe', {
-        payment_type: type,
-      });
-
-      if (response.data.checkout_url) {
-        // Open Stripe Checkout in browser
-        const result = await WebBrowser.openBrowserAsync(response.data.checkout_url, {
-          dismissButtonStyle: 'close',
-          presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
-        });
-
-        // After browser closes, check if payment was successful
-        if (result.type === 'cancel' || result.type === 'dismiss') {
-          // User closed the browser - they may have completed payment
-          // Refresh user data to check premium status
-          Alert.alert(
-            'Payment Status',
-            'If you completed your payment, your premium status will be updated shortly. Pull down to refresh.',
-            [{ text: 'OK' }]
-          );
+      const purchases = await restorePurchases();
+      
+      if (purchases && purchases.length > 0) {
+        // Check for active subscriptions
+        const hasActiveSubscription = purchases.some(
+          (p: any) => p.productId?.includes('premium')
+        );
+        
+        if (hasActiveSubscription) {
+          updateUser({ is_premium: true });
+          Alert.alert('Success', 'Your purchases have been restored!');
+        } else {
+          Alert.alert('No Active Subscriptions', 'No active subscriptions found to restore.');
         }
-      } else if (!response.data.payment_required) {
-        // Test mode - premium activated directly
-        updateUser({ is_premium: true });
-        Alert.alert('Success', 'Premium activated!', [
-          { text: 'OK', onPress: () => router.back() },
-        ]);
+      } else {
+        Alert.alert('No Purchases Found', 'No previous purchases found to restore.');
       }
-    } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.detail || 'Failed to start checkout');
+    } catch (err: any) {
+      Alert.alert('Error', 'Failed to restore purchases. Please try again.');
     } finally {
-      setLoading(false);
-      setSelectedPlan(null);
+      setRestoring(false);
     }
   };
 
@@ -106,15 +88,17 @@ export default function PremiumScreen() {
     { icon: 'videocam', text: 'Unlimited snap videos' },
   ];
 
-  if (verifying) {
+  // Loading state
+  if (!isReady || !connected) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#FF6B6B" />
-        <Text style={styles.loadingText}>Verifying your payment...</Text>
+        <Text style={styles.loadingText}>Connecting to store...</Text>
       </View>
     );
   }
 
+  // Already premium
   if (user?.is_premium) {
     return (
       <ScrollView style={styles.container}>
@@ -168,20 +152,19 @@ export default function PremiumScreen() {
 
       {/* Payment Methods Badge */}
       <View style={styles.paymentMethodsSection}>
-        <Text style={styles.paymentMethodsTitle}>Secure Payment</Text>
+        <Text style={styles.paymentMethodsTitle}>Secure In-App Purchase</Text>
         <View style={styles.paymentIcons}>
-          <View style={styles.paymentBadge}>
-            <Ionicons name="card" size={20} color="#666" />
-            <Text style={styles.paymentText}>Credit Card</Text>
-          </View>
-          <View style={styles.paymentBadge}>
-            <Ionicons name="card-outline" size={20} color="#666" />
-            <Text style={styles.paymentText}>Debit Card</Text>
-          </View>
-          <View style={styles.paymentBadge}>
-            <Ionicons name="logo-apple" size={20} color="#666" />
-            <Text style={styles.paymentText}>Apple Pay</Text>
-          </View>
+          {Platform.OS === 'ios' ? (
+            <View style={styles.paymentBadge}>
+              <Ionicons name="logo-apple" size={20} color="#666" />
+              <Text style={styles.paymentText}>App Store</Text>
+            </View>
+          ) : (
+            <View style={styles.paymentBadge}>
+              <Ionicons name="logo-google-playstore" size={20} color="#666" />
+              <Text style={styles.paymentText}>Google Play</Text>
+            </View>
+          )}
         </View>
       </View>
 
@@ -198,10 +181,14 @@ export default function PremiumScreen() {
       <View style={styles.plansSection}>
         <Text style={styles.sectionTitle}>Choose Your Plan</Text>
 
+        {/* Monthly Plan */}
         <TouchableOpacity
-          style={[styles.planCard, loading && selectedPlan === 'premium_monthly' && styles.planCardLoading]}
-          onPress={() => handleSubscribe('premium_monthly')}
-          disabled={loading}
+          style={[
+            styles.planCard, 
+            purchasing === PRODUCT_IDS.PREMIUM_MONTHLY && styles.planCardLoading
+          ]}
+          onPress={() => handleSubscribe(PRODUCT_IDS.PREMIUM_MONTHLY)}
+          disabled={!!purchasing}
         >
           <View style={styles.planHeader}>
             <Text style={styles.planName}>Monthly</Text>
@@ -212,15 +199,20 @@ export default function PremiumScreen() {
             </View>
           </View>
           <Text style={styles.planDescription}>Cancel anytime</Text>
-          {loading && selectedPlan === 'premium_monthly' && (
+          {purchasing === PRODUCT_IDS.PREMIUM_MONTHLY && (
             <ActivityIndicator style={styles.planLoader} color="#FF6B6B" />
           )}
         </TouchableOpacity>
 
+        {/* Yearly Plan */}
         <TouchableOpacity
-          style={[styles.planCard, styles.popularPlan, loading && selectedPlan === 'premium_yearly' && styles.planCardLoading]}
-          onPress={() => handleSubscribe('premium_yearly')}
-          disabled={loading}
+          style={[
+            styles.planCard, 
+            styles.popularPlan, 
+            purchasing === PRODUCT_IDS.PREMIUM_YEARLY && styles.planCardLoading
+          ]}
+          onPress={() => handleSubscribe(PRODUCT_IDS.PREMIUM_YEARLY)}
+          disabled={!!purchasing}
         >
           <View style={styles.popularBadge}>
             <Text style={styles.popularBadgeText}>BEST VALUE</Text>
@@ -237,22 +229,37 @@ export default function PremiumScreen() {
             Save £29.89 compared to monthly
           </Text>
           <Text style={styles.savingsText}>Only £7.50/month</Text>
-          {loading && selectedPlan === 'premium_yearly' && (
+          {purchasing === PRODUCT_IDS.PREMIUM_YEARLY && (
             <ActivityIndicator style={styles.planLoader} color="#FF6B6B" />
           )}
         </TouchableOpacity>
       </View>
 
+      {/* Restore Purchases */}
+      <TouchableOpacity 
+        style={styles.restoreButton}
+        onPress={handleRestorePurchases}
+        disabled={restoring}
+      >
+        {restoring ? (
+          <ActivityIndicator size="small" color="#FF6B6B" />
+        ) : (
+          <Text style={styles.restoreButtonText}>Restore Purchases</Text>
+        )}
+      </TouchableOpacity>
+
       <View style={styles.footer}>
         <View style={styles.securePayment}>
           <Ionicons name="lock-closed" size={16} color="#4CAF50" />
-          <Text style={styles.secureText}>Secured by Stripe</Text>
+          <Text style={styles.secureText}>
+            Secured by {Platform.OS === 'ios' ? 'Apple' : 'Google Play'}
+          </Text>
         </View>
         <Text style={styles.footerText}>
-          Subscriptions auto-renew. Cancel anytime in settings.
+          Subscriptions auto-renew. Cancel anytime in {Platform.OS === 'ios' ? 'App Store' : 'Google Play'} settings.
         </Text>
         <Text style={styles.footerText}>
-          Annual subscriptions are non-refundable as per our Terms.
+          Payment will be charged to your {Platform.OS === 'ios' ? 'Apple ID' : 'Google'} account.
         </Text>
       </View>
     </ScrollView>
@@ -438,6 +445,15 @@ const styles = StyleSheet.create({
   },
   planLoader: {
     marginTop: 12,
+  },
+  restoreButton: {
+    alignItems: 'center',
+    padding: 16,
+  },
+  restoreButtonText: {
+    fontSize: 16,
+    color: '#FF6B6B',
+    fontWeight: '600',
   },
   footer: {
     padding: 24,
