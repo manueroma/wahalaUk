@@ -139,9 +139,11 @@ export default function RegisterScreen() {
         <Text style={styles.subtitle}>Find serious relationships</Text>
 
         <View style={styles.form}>
+          <Text style={styles.requiredNote}>* Required fields</Text>
+          
           <TextInput
             style={styles.input}
-            placeholder="Full Name"
+            placeholder="Full Name *"
             placeholderTextColor="#999"
             value={formData.name}
             onChangeText={(text) => setFormData({ ...formData, name: text })}
@@ -149,7 +151,7 @@ export default function RegisterScreen() {
 
           <TextInput
             style={styles.input}
-            placeholder="Email"
+            placeholder="Email *"
             placeholderTextColor="#999"
             value={formData.email}
             onChangeText={(text) => setFormData({ ...formData, email: text })}
@@ -159,7 +161,7 @@ export default function RegisterScreen() {
 
           <TextInput
             style={styles.input}
-            placeholder="Age"
+            placeholder="Age *"
             placeholderTextColor="#999"
             value={formData.age}
             onChangeText={(text) => setFormData({ ...formData, age: text })}
@@ -167,7 +169,7 @@ export default function RegisterScreen() {
           />
 
           <View style={styles.pickerContainer}>
-            <Text style={styles.label}>Gender</Text>
+            <Text style={styles.label}>Gender *</Text>
             <View style={styles.picker}>
               <Picker
                 selectedValue={formData.gender}
@@ -181,14 +183,14 @@ export default function RegisterScreen() {
 
           <TextInput
             style={styles.input}
-            placeholder="City"
+            placeholder="City *"
             placeholderTextColor="#999"
             value={formData.location_city}
             onChangeText={(text) => setFormData({ ...formData, location_city: text })}
           />
 
           <View style={styles.pickerContainer}>
-            <Text style={styles.label}>Country</Text>
+            <Text style={styles.label}>Country *</Text>
             <View style={styles.picker}>
               <Picker
                 selectedValue={formData.location_country}
@@ -202,7 +204,7 @@ export default function RegisterScreen() {
           </View>
 
           <View style={styles.pickerContainer}>
-            <Text style={styles.label}>Height (cm)</Text>
+            <Text style={styles.label}>Height (cm) *</Text>
             <View style={styles.picker}>
               <Picker
                 selectedValue={formData.height}
@@ -217,7 +219,7 @@ export default function RegisterScreen() {
 
           <TextInput
             style={styles.input}
-            placeholder="Instagram (optional)"
+            placeholder="Instagram Username (optional)"
             placeholderTextColor="#999"
             value={formData.instagram}
             onChangeText={(text) => setFormData({ ...formData, instagram: text })}
