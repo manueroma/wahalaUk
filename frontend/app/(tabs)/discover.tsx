@@ -290,6 +290,22 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginLeft: 4,
   },
+  instagramContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  instagramText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    marginLeft: 4,
+    fontWeight: '500',
+  },
   rosesContainer: {
     flexDirection: 'row',
     alignItems: 'center',
