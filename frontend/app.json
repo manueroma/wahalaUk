@@ -7,7 +7,7 @@
     "icon": "./assets/images/wahala-logo.png",
     "scheme": "wahalauk",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.wahalauk.app",
@@ -25,14 +25,14 @@
       },
       "package": "com.wahalauk.app",
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "RECORD_AUDIO",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
-      ],
-      "edgeToEdgeEnabled": true
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "com.android.vending.BILLING"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -68,8 +68,7 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Show you potential matches nearby"
         }
-      ],
-      "expo-iap"
+      ]
     ],
     "experiments": {
       "typedRoutes": true
