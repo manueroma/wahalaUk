@@ -2021,8 +2021,8 @@ async def get_my_referral_code(current_user: dict = Depends(get_current_user)):
     
     return {
         "referral_code": referral_code,
-        "referral_link": f"https://wahalauk.com/invite/{referral_code}",
-        "share_message": f"Join me on WAHALA UK - the dating app for Black professionals! Use my code {referral_code} and get 5 free roses! 🌹 https://wahalauk.com/invite/{referral_code}"
+        "referral_link": f"{APP_BASE_URL}/invite/{referral_code}",
+        "share_message": f"Join me on WAHALA UK - the dating app for Black professionals! Use my code {referral_code} and get 5 free roses! 🌹 {APP_BASE_URL}/invite/{referral_code}"
     }
 
 @app.get("/api/referral/stats")
