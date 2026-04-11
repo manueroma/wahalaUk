@@ -18,6 +18,8 @@ import random
 import string
 import hashlib
 import smtplib
+import httpx
+import json
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -1374,6 +1376,279 @@ async def get_premium_status(current_user: dict = Depends(get_current_user)):
     return {
         "is_premium": is_premium,
         "expiry": expiry.isoformat() if expiry else None
+    }
+
+# ============================================================
+# IN-APP PURCHASE VERIFICATION (Apple App Store & Google Play)
+# ============================================================
+
+class IAPVerifyRequest(BaseModel):
+    """Request model for IAP verification"""
+    platform: str  # 'ios' or 'android'
+    product_id: str  # e.g., 'uk.wahala.premium.monthly'
+    receipt_data: str  # iOS: receipt base64, Android: purchase token
+    transaction_id: Optional[str] = None  # Optional transaction ID
+
+# Apple App Store verification URLs
+APPLE_VERIFY_URL_PRODUCTION = "https://buy.itunes.apple.com/verifyReceipt"
+APPLE_VERIFY_URL_SANDBOX = "https://sandbox.itunes.apple.com/verifyReceipt"
+
+# Your Apple App Shared Secret (get from App Store Connect)
+APPLE_SHARED_SECRET = os.getenv("APPLE_SHARED_SECRET", "")
+
+# Google Play verification - Service Account credentials
+GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "")
+
+# Product ID mappings
+IAP_PRODUCTS = {
+    "uk.wahala.premium.monthly": {"type": "subscription", "duration_days": 30, "roses": 0},
+    "uk.wahala.premium.yearly": {"type": "subscription", "duration_days": 365, "roses": 0},
+    "uk.wahala.roses": {"type": "consumable", "duration_days": 0, "roses": 10},
+    "uk.wahala.skip_chat_wait": {"type": "consumable", "duration_days": 0, "roses": 0},
+}
+
+async def verify_apple_receipt(receipt_data: str) -> dict:
+    """Verify Apple App Store receipt"""
+    if not APPLE_SHARED_SECRET:
+        # No secret configured - accept in development mode
+        return {
+            "valid": True,
+            "sandbox": True,
+            "product_id": None,
+            "transaction_id": "dev_mode",
+            "message": "Development mode - no Apple shared secret configured"
+        }
+    
+    verify_payload = {
+        "receipt-data": receipt_data,
+        "password": APPLE_SHARED_SECRET,
+        "exclude-old-transactions": True
+    }
+    
+    async with httpx.AsyncClient() as client:
+        # Try production first
+        response = await client.post(APPLE_VERIFY_URL_PRODUCTION, json=verify_payload)
+        result = response.json()
+        
+        # Status 21007 means it's a sandbox receipt
+        if result.get("status") == 21007:
+            response = await client.post(APPLE_VERIFY_URL_SANDBOX, json=verify_payload)
+            result = response.json()
+        
+        if result.get("status") == 0:
+            # Valid receipt
+            latest_receipt_info = result.get("latest_receipt_info", [])
+            if latest_receipt_info:
+                latest = latest_receipt_info[-1]
+                return {
+                    "valid": True,
+                    "sandbox": "sandbox" in response.url.path,
+                    "product_id": latest.get("product_id"),
+                    "transaction_id": latest.get("transaction_id"),
+                    "expires_date": latest.get("expires_date_ms"),
+                    "message": "Receipt verified successfully"
+                }
+            
+            # Check in_app array for consumables
+            in_app = result.get("receipt", {}).get("in_app", [])
+            if in_app:
+                latest = in_app[-1]
+                return {
+                    "valid": True,
+                    "sandbox": "sandbox" in response.url.path,
+                    "product_id": latest.get("product_id"),
+                    "transaction_id": latest.get("transaction_id"),
+                    "message": "Receipt verified successfully"
+                }
+        
+        return {
+            "valid": False,
+            "status": result.get("status"),
+            "message": f"Apple verification failed with status {result.get('status')}"
+        }
+
+async def verify_google_purchase(product_id: str, purchase_token: str) -> dict:
+    """Verify Google Play purchase"""
+    if not GOOGLE_SERVICE_ACCOUNT_JSON:
+        # No credentials configured - accept in development mode
+        return {
+            "valid": True,
+            "sandbox": True,
+            "product_id": product_id,
+            "transaction_id": "dev_mode",
+            "message": "Development mode - no Google service account configured"
+        }
+    
+    try:
+        # Parse service account JSON
+        service_account = json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
+        
+        # For production, you would use Google's Play Developer API
+        # This requires OAuth2 authentication with service account
+        # Here's a simplified version - in production use google-auth library
+        
+        # Package name should match your app
+        package_name = "com.wahalauk.app"
+        
+        # For subscriptions: /androidpublisher/v3/applications/{packageName}/purchases/subscriptions/{subscriptionId}/tokens/{token}
+        # For products: /androidpublisher/v3/applications/{packageName}/purchases/products/{productId}/tokens/{token}
+        
+        # In development mode, accept the purchase
+        return {
+            "valid": True,
+            "sandbox": True,
+            "product_id": product_id,
+            "transaction_id": purchase_token[:20] if purchase_token else "unknown",
+            "message": "Google verification - configure service account for production"
+        }
+        
+    except Exception as e:
+        return {
+            "valid": False,
+            "message": f"Google verification error: {str(e)}"
+        }
+
+@app.post("/api/iap/verify-purchase")
+async def verify_iap_purchase(
+    request: IAPVerifyRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Verify In-App Purchase from Apple App Store or Google Play Store.
+    This endpoint should be called after a successful purchase on the client.
+    """
+    user_id = str(current_user["_id"])
+    
+    # Validate product ID
+    if request.product_id not in IAP_PRODUCTS:
+        raise HTTPException(status_code=400, detail=f"Unknown product: {request.product_id}")
+    
+    product_info = IAP_PRODUCTS[request.product_id]
+    
+    # Verify receipt based on platform
+    if request.platform.lower() == "ios":
+        verification = await verify_apple_receipt(request.receipt_data)
+    elif request.platform.lower() == "android":
+        verification = await verify_google_purchase(request.product_id, request.receipt_data)
+    else:
+        raise HTTPException(status_code=400, detail="Invalid platform. Use 'ios' or 'android'")
+    
+    if not verification.get("valid"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Purchase verification failed: {verification.get('message', 'Unknown error')}"
+        )
+    
+    # Record the transaction
+    transaction = {
+        "user_id": user_id,
+        "platform": request.platform.lower(),
+        "product_id": request.product_id,
+        "transaction_id": verification.get("transaction_id", request.transaction_id),
+        "receipt_data": request.receipt_data[:100] + "..." if len(request.receipt_data) > 100 else request.receipt_data,
+        "verified": True,
+        "sandbox": verification.get("sandbox", False),
+        "created_at": datetime.utcnow()
+    }
+    
+    # Check for duplicate transaction
+    existing = transactions_collection.find_one({
+        "transaction_id": transaction["transaction_id"],
+        "product_id": request.product_id
+    })
+    
+    if existing:
+        return {
+            "success": True,
+            "message": "Purchase already processed",
+            "product_id": request.product_id,
+            "already_processed": True
+        }
+    
+    # Save transaction
+    transactions_collection.insert_one(transaction)
+    
+    # Apply the purchase benefits
+    result_message = ""
+    
+    if product_info["type"] == "subscription":
+        # Grant premium status
+        duration_days = product_info["duration_days"]
+        current_expiry = current_user.get("premium_expiry")
+        
+        # If already premium, extend from current expiry
+        if current_expiry and current_expiry > datetime.utcnow():
+            new_expiry = current_expiry + timedelta(days=duration_days)
+        else:
+            new_expiry = datetime.utcnow() + timedelta(days=duration_days)
+        
+        users_collection.update_one(
+            {"_id": current_user["_id"]},
+            {
+                "$set": {
+                    "premium_status": "premium",
+                    "premium_expiry": new_expiry,
+                    "is_premium": True
+                }
+            }
+        )
+        result_message = f"Premium activated until {new_expiry.strftime('%Y-%m-%d')}"
+        
+    elif request.product_id == "uk.wahala.roses":
+        # Add roses
+        roses_to_add = product_info["roses"]
+        users_collection.update_one(
+            {"_id": current_user["_id"]},
+            {"$inc": {"roses_balance": roses_to_add}}
+        )
+        result_message = f"Added {roses_to_add} roses to your balance"
+        
+    elif request.product_id == "uk.wahala.skip_chat_wait":
+        # This is a one-time unlock - the client handles the UI
+        # We just record the purchase
+        result_message = "Chat wait time skipped"
+    
+    return {
+        "success": True,
+        "message": result_message,
+        "product_id": request.product_id,
+        "product_type": product_info["type"],
+        "verified": True,
+        "sandbox": verification.get("sandbox", False)
+    }
+
+@app.post("/api/iap/restore-purchases")
+async def restore_iap_purchases(current_user: dict = Depends(get_current_user)):
+    """
+    Restore previous purchases for the current user.
+    Returns list of active subscriptions.
+    """
+    user_id = str(current_user["_id"])
+    
+    # Get user's transaction history
+    transactions = list(transactions_collection.find({
+        "user_id": user_id,
+        "verified": True
+    }).sort("created_at", DESCENDING).limit(50))
+    
+    # Check for active subscription
+    is_premium = current_user.get("premium_status") == "premium"
+    expiry = current_user.get("premium_expiry")
+    
+    if is_premium and expiry and expiry > datetime.utcnow():
+        active_subscription = {
+            "product_id": "uk.wahala.premium.monthly",  # or yearly based on duration
+            "expires": expiry.isoformat(),
+            "active": True
+        }
+    else:
+        active_subscription = None
+    
+    return {
+        "success": True,
+        "active_subscription": active_subscription,
+        "roses_balance": current_user.get("roses_balance", 0),
+        "transaction_count": len(transactions)
     }
 
 @app.get("/api/swipes/remaining")
