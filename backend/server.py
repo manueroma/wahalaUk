@@ -66,8 +66,8 @@ referrals_collection = db["referrals"]  # For referral tracking
 reports_collection = db["reports"]  # For user reports
 warnings_collection = db["warnings"]  # For user warnings
 
-# Admin email
-ADMIN_EMAIL = "wahalauk@gmail.com"
+# Admin email - loaded from environment variable
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "wahalauk@gmail.com")
 
 # Create referral indexes
 users_collection.create_index("referral_code", unique=True, sparse=True)
