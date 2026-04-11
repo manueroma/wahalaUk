@@ -68,7 +68,9 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Show you potential matches nearby"
         }
-      ]
+      ],
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
