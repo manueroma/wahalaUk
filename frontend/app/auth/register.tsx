@@ -199,6 +199,8 @@ export default function RegisterScreen() {
                 <Picker.Item label="United Kingdom" value="UK" />
                 <Picker.Item label="United States" value="US" />
                 <Picker.Item label="Italy" value="Italy" />
+                <Picker.Item label="Nigeria" value="Nigeria" />
+                <Picker.Item label="Ghana" value="Ghana" />
               </Picker>
             </View>
           </View>

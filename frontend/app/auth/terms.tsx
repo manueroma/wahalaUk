@@ -59,7 +59,7 @@ export default function TermsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>1. Welcome to WAHALA UK</Text>
           <Text style={styles.sectionText}>
-            Welcome to WAHALA UK, a dating platform designed primarily to support Black professionals in the UK, US, and Italy who are seeking serious, meaningful relationships. While our mission centers on uplifting the Black community, we welcome users of all ethnicities who share our values of respect, authenticity, and commitment.
+            Welcome to WAHALA UK, a dating platform designed primarily to support Black professionals in the UK, US, Italy, Nigeria, and Ghana who are seeking serious, meaningful relationships. While our mission centers on uplifting the Black community, we welcome users of all ethnicities who share our values of respect, authenticity, and commitment.
           </Text>
         </View>
 
